@@ -3,18 +3,18 @@ package backend;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
-@CrossOrigin(origins = "http://localhost:5174")
+@CrossOrigin(origins = "http://localhost:5173")
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
-    private final OpenAIService openAIService;
+  private final ChatService chatService;
 
-    public ChatController(OpenAIService openAIService) {
-        this.openAIService = openAIService;
-    }
+  public ChatController(ChatService chatService) {
+    this.chatService = chatService;
+  }
 
-    @GetMapping
-    public Mono<String> chat(@RequestParam String message) {
-        return openAIService.askChatGPT(message);
-    }
+  @GetMapping
+  public Mono<String> chat(@RequestParam String message) {
+    return chatService.chat(message);
+  }
 }
