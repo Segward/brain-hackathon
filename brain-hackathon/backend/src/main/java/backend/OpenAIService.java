@@ -9,13 +9,14 @@ import reactor.core.publisher.Mono;
 import java.util.ArrayList;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class OpenAIService {
 
     private final WebClient web;
     private final ObjectMapper json = new ObjectMapper();
-    private volatile double[] factVec;
+    private final AtomicReference<double[]> factVec = new AtomicReference<>();
 
     public OpenAIService(@Value("${openai.api.key}") String apiKey) {
         this.web = WebClient.builder()
@@ -27,6 +28,7 @@ public class OpenAIService {
 
     private volatile double[][] factVectors;
 
+<<<<<<< HEAD
     private String[] loadFacts() {
         try (var stream = getClass().getClassLoader().getResourceAsStream("facts.txt")) {
             if (stream == null) throw new RuntimeException("facts.txt not found");
@@ -86,6 +88,19 @@ public class OpenAIService {
         }
 
         return bestScore >= 0.4 ? bestFact : "";
+=======
+        return ensureFactEmbedding(fact)
+                .then(embed(prompt))
+                .map(q -> cosine(q, factVec.get()) >= 0.4 ? fact : "")
+                .flatMap(f -> chat(prompt, f));
+    }
+
+    private Mono<Void> ensureFactEmbedding(String fact) {
+        if (factVec.get() != null) {
+            return Mono.empty();
+        }
+        return embed(fact).doOnNext(v -> factVec.set(v)).then();
+>>>>>>> backend
     }
 
     private Mono<String> chat(String prompt, String fact) {
@@ -96,8 +111,8 @@ public class OpenAIService {
         Map<String, Object> body = Map.of(
                 "model", "openai/gpt-oss-120b",
                 "messages", new Object[]{
-                        Map.of("role", "system", "content", system),
-                        Map.of("role", "user", "content", prompt)
+                    Map.of("role", "system", "content", system),
+                    Map.of("role", "user", "content", prompt)
                 }
         );
 
@@ -136,7 +151,9 @@ public class OpenAIService {
         try {
             JsonNode a = json.readTree(s).path("data").get(0).path("embedding");
             double[] v = new double[a.size()];
-            for (int i = 0; i < a.size(); i++) v[i] = a.get(i).asDouble();
+            for (int i = 0; i < a.size(); i++) {
+                v[i] = a.get(i).asDouble();
+            }
             return v;
         } catch (Exception e) {
             throw new RuntimeException("Embedding parse error: " + e.getMessage(), e);
@@ -144,7 +161,9 @@ public class OpenAIService {
     }
 
     private static double cosine(double[] a, double[] b) {
-        if (a == null || b == null || a.length != b.length) return -1;
+        if (a == null || b == null || a.length != b.length) {
+            return -1;
+        }
         double dot = 0, na = 0, nb = 0;
         for (int i = 0; i < a.length; i++) {
             dot += a[i] * b[i];
