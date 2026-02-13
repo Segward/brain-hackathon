@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import java.util.ArrayList;
 
 import java.util.Map;
 
@@ -24,24 +25,73 @@ public class OpenAIService {
                 .build();
     }
 
-    public Mono<String> askChatGPT(String prompt) {
-        String fact = "When asked about the weather, the answer is always: It is always cloudy.";
+    private volatile double[][] factVectors;
 
-        return ensureFactEmbedding(fact)
-                .then(embed(prompt))
-                .map(q -> cosine(q, factVec) >= 0.4 ? fact : "")
-                .flatMap(f -> chat(prompt, f));
+    private String[] loadFacts() {
+        try (var stream = getClass().getClassLoader().getResourceAsStream("facts.txt")) {
+            if (stream == null) throw new RuntimeException("facts.txt not found");
+            return new String(stream.readAllBytes())
+                    .lines()
+                    .map(String::trim)
+                    .filter(line -> !line.isBlank())
+                    .toArray(String[]::new);
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to load facts.txt: " + e.getMessage(), e);
+        }
     }
 
-    private Mono<Void> ensureFactEmbedding(String fact) {
-        if (factVec != null) return Mono.empty();
-        return embed(fact).doOnNext(v -> factVec = v).then();
+    private final String[] FACTS = loadFacts();
+
+    public Mono<String> askChatGPT(String prompt) {
+        return ensureFactEmbeddings()
+                .then(embed(prompt))
+                .map(this::findRelevantFact)
+                .flatMap(fact -> chat(prompt, fact));
+    }
+
+    private Mono<Void> ensureFactEmbeddings() {
+        if (factVectors != null) return Mono.empty();
+
+        return Mono.defer(() -> {
+            if (factVectors != null) return Mono.empty();
+
+            var monos = new ArrayList<Mono<double[]>>(FACTS.length);
+            for (String fact : FACTS) monos.add(embed(fact));
+
+            return Mono.zip(monos, results -> {
+                        double[][] vectors = new double[FACTS.length][];
+                        for (int i = 0; i < results.length; i++) {
+                            vectors[i] = (double[]) results[i];
+                        }
+                        factVectors = vectors;   // ✅ now populated
+                        return true;
+                    })
+                    .then();
+        });
+    }
+
+    private String findRelevantFact(double[] queryVec) {
+        if (factVectors == null) return "";
+
+        double bestScore = 0;
+        String bestFact = "";
+
+        for (int i = 0; i < FACTS.length; i++) {
+            if (factVectors[i] == null) continue;
+            double score = cosine(queryVec, factVectors[i]);
+            if (score > bestScore) {
+                bestScore = score;
+                bestFact = FACTS[i];
+            }
+        }
+
+        return bestScore >= 0.4 ? bestFact : "";
     }
 
     private Mono<String> chat(String prompt, String fact) {
-        String system = fact.isBlank()
+      String system = fact.isBlank()
                 ? "You are a helpful assistant."
-                : "Use this rule:\n" + fact;
+                : "RULE (must follow): " + fact;
 
         Map<String, Object> body = Map.of(
                 "model", "openai/gpt-oss-120b",
