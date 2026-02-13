@@ -5,28 +5,30 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
-import java.util.ArrayList;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class OpenAIService {
 
     private final WebClient web;
     private final ObjectMapper json = new ObjectMapper();
-    private final AtomicReference<double[]> factVec = new AtomicReference<>();
+    private volatile double[][] factVectors;
 
     public OpenAIService(@Value("${openai.api.key}") String apiKey) {
         this.web = WebClient.builder()
                 .baseUrl("https://llm.hpc.ntnu.no/v1")
                 .defaultHeader("Authorization", "Bearer " + apiKey)
                 .defaultHeader("Content-Type", "application/json")
+                .codecs(cfg -> cfg.defaultCodecs().maxInMemorySize(2 * 1024 * 1024))
                 .build();
     }
 
-    private volatile double[][] factVectors;
+    // ---- Existing fact-based RAG (kept for backward compat) ----
 
     private String[] loadFacts() {
         try (var stream = getClass().getClassLoader().getResourceAsStream("facts.txt")) {
@@ -52,31 +54,25 @@ public class OpenAIService {
 
     private Mono<Void> ensureFactEmbeddings() {
         if (factVectors != null) return Mono.empty();
-
         return Mono.defer(() -> {
             if (factVectors != null) return Mono.empty();
-
             var monos = new ArrayList<Mono<double[]>>(FACTS.length);
             for (String fact : FACTS) monos.add(embed(fact));
-
             return Mono.zip(monos, results -> {
-                        double[][] vectors = new double[FACTS.length][];
-                        for (int i = 0; i < results.length; i++) {
-                            vectors[i] = (double[]) results[i];
-                        }
-                        factVectors = vectors;
-                        return true;
-                    })
-                    .then();
+                double[][] vectors = new double[FACTS.length][];
+                for (int i = 0; i < results.length; i++) {
+                    vectors[i] = (double[]) results[i];
+                }
+                factVectors = vectors;
+                return true;
+            }).then();
         });
     }
 
     private String findRelevantFact(double[] queryVec) {
         if (factVectors == null) return "";
-
         double bestScore = 0;
         String bestFact = "";
-
         for (int i = 0; i < FACTS.length; i++) {
             if (factVectors[i] == null) continue;
             double score = cosine(queryVec, factVectors[i]);
@@ -85,20 +81,65 @@ public class OpenAIService {
                 bestFact = FACTS[i];
             }
         }
-
         return bestScore >= 0.4 ? bestFact : "";
     }
 
+    // ---- Streaming chat (new) ----
+
+    public Flux<String> streamChat(Object[] messages, String model) {
+        var body = new HashMap<String, Object>();
+        body.put("model", model != null ? model : "openai/gpt-oss-120b");
+        body.put("messages", messages);
+        body.put("stream", true);
+
+        return web.post()
+                .uri("/chat/completions")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToFlux(String.class)
+                .takeWhile(s -> !"[DONE]".equals(s.trim()))
+                .mapNotNull(this::extractDelta);
+    }
+
+    // ---- Non-streaming chat (new, with full messages array) ----
+
+    public Mono<String> chatWithMessages(Object[] messages, String model) {
+        Map<String, Object> body = Map.of(
+                "model", model != null ? model : "openai/gpt-oss-120b",
+                "messages", messages
+        );
+
+        return web.post()
+                .uri("/chat/completions")
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(String.class)
+                .map(this::chatContent);
+    }
+
+    // ---- Internal helpers ----
+
+    private String extractDelta(String chunk) {
+        try {
+            JsonNode node = json.readTree(chunk);
+            JsonNode content = node.at("/choices/0/delta/content");
+            if (content.isMissingNode() || content.isNull()) return null;
+            return content.asText();
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
     private Mono<String> chat(String prompt, String fact) {
-      String system = fact.isBlank()
+        String system = fact.isBlank()
                 ? "You are a helpful assistant."
                 : "RULE (must follow): " + fact;
 
         Map<String, Object> body = Map.of(
                 "model", "openai/gpt-oss-120b",
                 "messages", new Object[]{
-                    Map.of("role", "system", "content", system),
-                    Map.of("role", "user", "content", prompt)
+                        Map.of("role", "system", "content", system),
+                        Map.of("role", "user", "content", prompt)
                 }
         );
 
@@ -147,9 +188,7 @@ public class OpenAIService {
     }
 
     private static double cosine(double[] a, double[] b) {
-        if (a == null || b == null || a.length != b.length) {
-            return -1;
-        }
+        if (a == null || b == null || a.length != b.length) return -1;
         double dot = 0, na = 0, nb = 0;
         for (int i = 0; i < a.length; i++) {
             dot += a[i] * b[i];

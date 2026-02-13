@@ -1,22 +1,27 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref } from "vue";
 
-const mobileOpen = ref(false)
+const mobileOpen = ref(false);
 
 const links = [
-  { label: 'Politikk', href: '#politikk' },
-  { label: 'Demo', href: '#demo' },
-  { label: 'Avatarer', href: '#avatarer' },
-  { label: 'FAQ', href: '#faq' },
-]
+  { label: "Politikk", href: "#politikk" },
+  { label: "Demo", href: "#demo" },
+  { label: "Avatarer", href: "#avatarer" },
+  { label: "FAQ", href: "#faq" },
+];
 </script>
 
 <template>
-  <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200">
+  <nav
+    class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-gray-200"
+  >
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
-        <a href="#" class="flex items-center gap-2 font-bold text-xl text-brand-800">
+        <a
+          href="#"
+          class="flex items-center gap-2 font-bold text-xl text-brand-800"
+        >
           <span class="text-2xl">🏛️</span>
           <span>Autonomipartiet</span>
         </a>
@@ -45,11 +50,33 @@ const links = [
           aria-label="Åpne meny"
           @click="mobileOpen = !mobileOpen"
         >
-          <svg v-if="!mobileOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          <svg
+            v-if="!mobileOpen"
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M4 6h16M4 12h16M4 18h16"
+            />
           </svg>
-          <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          <svg
+            v-else
+            class="w-6 h-6"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M6 18L18 6M6 6l12 12"
+            />
           </svg>
         </button>
       </div>

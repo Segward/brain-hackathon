@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, watch, onMounted } from 'vue'
+import { ref, nextTick, watch, onMounted, computed } from 'vue'
 import { useCopilotState } from '@/composables/useCopilotState'
 
 const {
@@ -8,7 +8,9 @@ const {
   useRag,
   persona,
   isLoading,
+  streamingId,
   send,
+  clearChat,
 } = useCopilotState()
 
 const props = defineProps<{
@@ -32,10 +34,23 @@ const models = [
 
 const exampleChips = [
   'Hva er borgerlønn?',
-  'Hvordan fungerer AI i skolen?',
+  'Hvordan skal eksamen fungere med AI?',
   'Er selvkjørende busser trygge?',
   'Hvordan kutte utslipp med AI?',
 ]
+
+const personaLabels: Record<string, string> = {
+  leader: 'Partileder',
+  education: 'Utdanningsminister',
+  tech: 'Teknologiminister',
+}
+
+// Show loading only when waiting for first token
+const showLoadingBubble = computed(() => {
+  return isLoading.value && !streamingId.value
+})
+
+// ---- Prefill from policy cards ----
 
 watch(
   () => props.prefillText,
@@ -44,13 +59,15 @@ watch(
       inputText.value = text
       emit('prefillConsumed')
       nextTick(() => {
-        const el = document.getElementById('demo')
-        el?.scrollIntoView({ behavior: 'smooth' })
+        document.getElementById('demo')?.scrollIntoView({ behavior: 'smooth' })
         textareaRef.value?.focus()
+        autoResize()
       })
     }
   },
 )
+
+// ---- Auto-scroll (deep watch to catch streaming updates) ----
 
 function scrollToBottom() {
   nextTick(() => {
@@ -60,15 +77,15 @@ function scrollToBottom() {
   })
 }
 
-watch(
-  () => messages.value.length,
-  () => scrollToBottom(),
-)
-watch(isLoading, () => scrollToBottom())
+watch(messages, () => scrollToBottom(), { deep: true })
+watch(showLoadingBubble, () => scrollToBottom())
+
+// ---- Input handling ----
 
 async function handleSend() {
   const text = inputText.value
   inputText.value = ''
+  resetTextareaHeight()
   await send(text)
 }
 
@@ -82,7 +99,25 @@ function handleKeydown(e: KeyboardEvent) {
 function useChip(chip: string) {
   inputText.value = chip
   textareaRef.value?.focus()
+  nextTick(autoResize)
 }
+
+// ---- Auto-resize textarea ----
+
+function autoResize() {
+  const el = textareaRef.value
+  if (!el) return
+  el.style.height = 'auto'
+  el.style.height = Math.min(el.scrollHeight, 120) + 'px'
+}
+
+function resetTextareaHeight() {
+  const el = textareaRef.value
+  if (!el) return
+  el.style.height = 'auto'
+}
+
+// ---- Copy ----
 
 async function copyMessage(id: string, content: string) {
   try {
@@ -94,16 +129,53 @@ async function copyMessage(id: string, content: string) {
   }
 }
 
-const personaLabels: Record<string, string> = {
-  leader: 'Partileder',
-  education: 'Utdanningsminister',
-  tech: 'Teknologiminister',
+// ---- Markdown rendering ----
+
+function renderMarkdown(content: string): string {
+  let html = escapeHtml(content)
+
+  // Code blocks (```...```)
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang, code) => {
+    return `<pre class="bg-gray-800 text-gray-100 rounded-lg p-3 my-2 overflow-x-auto text-xs leading-relaxed"><code>${code.trim()}</code></pre>`
+  })
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, '<code class="bg-gray-200 text-gray-800 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>')
+
+  // Bold
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+
+  // Italic
+  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, '<em>$1</em>')
+
+  // Headers (## and ###)
+  html = html.replace(/^### (.+)$/gm, '<h4 class="font-bold text-sm mt-3 mb-1">$1</h4>')
+  html = html.replace(/^## (.+)$/gm, '<h3 class="font-bold text-base mt-3 mb-1">$1</h3>')
+
+  // Unordered lists
+  html = html.replace(/^[-*] (.+)$/gm, '<li class="ml-4 list-disc">$1</li>')
+  html = html.replace(/((?:<li[^>]*>.*<\/li>\n?)+)/g, '<ul class="my-1.5 space-y-0.5">$1</ul>')
+
+  // Numbered lists
+  html = html.replace(/^\d+\. (.+)$/gm, '<li class="ml-4 list-decimal">$1</li>')
+
+  // Blockquotes
+  html = html.replace(/^&gt; (.+)$/gm, '<blockquote class="border-l-3 border-brand-400 pl-3 my-2 text-gray-600 italic">$1</blockquote>')
+
+  // Paragraphs (double newline)
+  html = html.replace(/\n\n/g, '</p><p class="mt-2">')
+
+  // Single newlines
+  html = html.replace(/\n/g, '<br>')
+
+  return `<p>${html}</p>`
 }
 
-function formatMessage(content: string): string {
-  return content
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>')
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
 }
 
 onMounted(() => {
@@ -127,12 +199,24 @@ onMounted(() => {
           <input type="checkbox" v-model="useRag" class="sr-only peer" />
           <div class="w-9 h-5 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-300 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-600"></div>
         </div>
-        Bruk partiprogram (RAG)
+        RAG (partiprogram)
       </label>
 
-      <span class="ml-auto text-xs text-gray-400">
-        Persona: <strong class="text-gray-600">{{ personaLabels[persona] }}</strong>
-      </span>
+      <div class="ml-auto flex items-center gap-3">
+        <span class="text-xs text-gray-400">
+          <strong class="text-gray-600">{{ personaLabels[persona] }}</strong>
+        </span>
+        <button
+          v-if="messages.length > 0"
+          class="text-xs text-gray-400 hover:text-red-500 transition-colors"
+          title="Tøm samtale"
+          @click="clearChat"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+          </svg>
+        </button>
+      </div>
     </div>
 
     <!-- Messages -->
@@ -147,20 +231,38 @@ onMounted(() => {
       </div>
 
       <!-- Message bubbles -->
-      <div v-for="msg in messages" :key="msg.id" :class="['flex', msg.role === 'user' ? 'justify-end' : 'justify-start']">
+      <div
+        v-for="msg in messages"
+        :key="msg.id"
+        :class="['flex animate-fade-in', msg.role === 'user' ? 'justify-end' : 'justify-start']"
+      >
         <div
           :class="[
-            'max-w-[80%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+            'max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
             msg.role === 'user'
               ? 'bg-brand-700 text-white rounded-br-md'
               : 'bg-gray-100 text-gray-800 rounded-bl-md',
           ]"
         >
-          <div class="whitespace-pre-wrap" v-html="formatMessage(msg.content)"></div>
+          <!-- User message: plain text -->
+          <div v-if="msg.role === 'user'" class="whitespace-pre-wrap">{{ msg.content }}</div>
+
+          <!-- Assistant message: rendered markdown -->
+          <div
+            v-else
+            class="prose-sm prose-headings:text-gray-900 prose-strong:text-gray-900 max-w-none"
+            v-html="renderMarkdown(msg.content)"
+          ></div>
+
+          <!-- Streaming cursor -->
+          <span
+            v-if="msg.role === 'assistant' && streamingId === msg.id"
+            class="inline-block w-1.5 h-4 bg-brand-600 rounded-sm animate-pulse ml-0.5 align-text-bottom"
+          ></span>
 
           <!-- Copy button for assistant -->
           <button
-            v-if="msg.role === 'assistant'"
+            v-if="msg.role === 'assistant' && streamingId !== msg.id"
             class="mt-2 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
             :aria-label="copiedId === msg.id ? 'Kopiert' : 'Kopier svar'"
             @click="copyMessage(msg.id, msg.content)"
@@ -176,8 +278,8 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Loading bubble -->
-      <div v-if="isLoading" class="flex justify-start">
+      <!-- Loading bubble (before first token) -->
+      <div v-if="showLoadingBubble" class="flex justify-start animate-fade-in">
         <div class="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3 text-sm text-gray-500 flex items-center gap-2">
           <span class="flex gap-1">
             <span class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce" style="animation-delay: 0ms"></span>
@@ -211,6 +313,7 @@ onMounted(() => {
           rows="1"
           class="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-transparent placeholder:text-gray-400"
           @keydown="handleKeydown"
+          @input="autoResize"
         ></textarea>
         <button
           :disabled="!inputText.trim() || isLoading"
@@ -219,10 +322,30 @@ onMounted(() => {
           @click="handleSend"
         >
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19V5m0 0l-7 7m7-7l7 7" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14m-7-7l7 7-7 7" />
           </svg>
         </button>
       </div>
+      <p class="text-[10px] text-gray-400 mt-1.5 text-center">
+        Enter for å sende · Shift+Enter for ny linje
+      </p>
     </div>
   </div>
 </template>
+
+<style scoped>
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.25s ease-out;
+}
+</style>

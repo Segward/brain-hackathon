@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import { useCopilotState } from '@/composables/useCopilotState'
 
-const { lastSources, lastBadges, useRag } = useCopilotState()
+const { lastSources, lastBadges, useRag, messages } = useCopilotState()
 </script>
 
 <template>
+  <!-- Always show badges when there are messages; show sources only with RAG -->
   <aside
-    v-if="useRag && (lastSources.length > 0 || lastBadges.length > 0)"
-    class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5"
+    v-if="messages.length > 0 && (lastBadges.length > 0 || lastSources.length > 0)"
+    class="space-y-4"
   >
     <!-- Badges -->
-    <div v-if="lastBadges.length > 0" class="mb-5">
+    <div v-if="lastBadges.length > 0" class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
       <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Politikkområder</h3>
       <div class="flex flex-wrap gap-2">
         <span
@@ -23,9 +24,9 @@ const { lastSources, lastBadges, useRag } = useCopilotState()
       </div>
     </div>
 
-    <!-- Sources -->
-    <div v-if="lastSources.length > 0">
-      <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Kilder</h3>
+    <!-- Sources (only with RAG) -->
+    <div v-if="useRag && lastSources.length > 0" class="bg-white rounded-2xl border border-gray-200 shadow-sm p-5">
+      <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Kilder fra partiprogram</h3>
       <div class="space-y-3">
         <div
           v-for="(source, i) in lastSources"
@@ -43,6 +44,13 @@ const { lastSources, lastBadges, useRag } = useCopilotState()
           </div>
         </div>
       </div>
+    </div>
+
+    <!-- RAG hint -->
+    <div v-if="!useRag && messages.length > 0" class="bg-blue-50 rounded-2xl border border-blue-100 p-4 text-center">
+      <p class="text-xs text-blue-600">
+        Slå på <strong>RAG (partiprogram)</strong> for å se kilder og partiprogramreferanser.
+      </p>
     </div>
   </aside>
 </template>
