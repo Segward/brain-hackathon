@@ -28,7 +28,6 @@ public class OpenAIService {
 
     private volatile double[][] factVectors;
 
-<<<<<<< HEAD
     private String[] loadFacts() {
         try (var stream = getClass().getClassLoader().getResourceAsStream("facts.txt")) {
             if (stream == null) throw new RuntimeException("facts.txt not found");
@@ -65,7 +64,7 @@ public class OpenAIService {
                         for (int i = 0; i < results.length; i++) {
                             vectors[i] = (double[]) results[i];
                         }
-                        factVectors = vectors;   // ✅ now populated
+                        factVectors = vectors;
                         return true;
                     })
                     .then();
@@ -88,19 +87,6 @@ public class OpenAIService {
         }
 
         return bestScore >= 0.4 ? bestFact : "";
-=======
-        return ensureFactEmbedding(fact)
-                .then(embed(prompt))
-                .map(q -> cosine(q, factVec.get()) >= 0.4 ? fact : "")
-                .flatMap(f -> chat(prompt, f));
-    }
-
-    private Mono<Void> ensureFactEmbedding(String fact) {
-        if (factVec.get() != null) {
-            return Mono.empty();
-        }
-        return embed(fact).doOnNext(v -> factVec.set(v)).then();
->>>>>>> backend
     }
 
     private Mono<String> chat(String prompt, String fact) {
