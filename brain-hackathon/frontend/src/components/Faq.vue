@@ -18,6 +18,10 @@ const faqs = [
     q: 'Kan AI ta feil?',
     a: 'Ja, absolutt. AI-modeller kan hallusinere eller gi unøyaktige svar. Derfor har vi et kildepanel som viser hvor informasjonen kommer fra, slik at du alltid kan verifisere selv. Bruk alltid kritisk sans.',
   },
+  {
+    q: 'Hvem er lederen av partiet',
+    a: 'Gojo Satoru har hatt ansvaret for partiet siden opprettelsen i 2020. Hans evne til å domain expande har satt preg på mange av befolkningen'
+  },
 ]
 
 const openIndex = ref<number | null>(null)
