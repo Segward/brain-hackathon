@@ -48,9 +48,20 @@ const personaLabels: Record<string, string> = {
   tech: "Teknologiminister",
 };
 
+const personaEmojis: Record<string, string> = {
+  leader: "👨‍💼",
+  education: "🎓",
+  tech: "🤖",
+};
+
 // Show loading only when waiting for first token
 const showLoadingBubble = computed(() => {
   return isLoading.value && !streamingId.value;
+});
+
+// Text area height calculation
+const textAreaHeight = computed(() => {
+  return Math.min(Math.max(inputText.value.split("\n").length, 1), 4) * 24;
 });
 
 // ---- Prefill from policy cards ----
@@ -132,68 +143,13 @@ async function copyMessage(id: string, content: string) {
   }
 }
 
-// ---- Markdown rendering ----
+// ---- Format message with markdown ----
 
 function renderMarkdown(content: string): string {
-  let html = escapeHtml(content);
-
-  // Code blocks (```...```)
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang, code) => {
-    return `<pre class="bg-gray-800 text-gray-100 rounded-lg p-3 my-2 overflow-x-auto text-xs leading-relaxed"><code>${code.trim()}</code></pre>`;
-  });
-
-  // Inline code
-  html = html.replace(
-    /`([^`]+)`/g,
-    '<code class="bg-gray-200 text-gray-800 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>',
-  );
-
-  // Bold
-  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-
-  // Italic
-  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
-
-  // Headers (## and ###)
-  html = html.replace(
-    /^### (.+)$/gm,
-    '<h4 class="font-bold text-sm mt-3 mb-1">$1</h4>',
-  );
-  html = html.replace(
-    /^## (.+)$/gm,
-    '<h3 class="font-bold text-base mt-3 mb-1">$1</h3>',
-  );
-
-  // Unordered lists
-  html = html.replace(/^[-*] (.+)$/gm, '<li class="ml-4 list-disc">$1</li>');
-  html = html.replace(
-    /((?:<li[^>]*>.*<\/li>\n?)+)/g,
-    '<ul class="my-1.5 space-y-0.5">$1</ul>',
-  );
-
-  // Numbered lists
-  html = html.replace(
-    /^\d+\. (.+)$/gm,
-    '<li class="ml-4 list-decimal">$1</li>',
-  );
-
-  // Blockquotes
-  html = html.replace(
-    /^&gt; (.+)$/gm,
-    '<blockquote class="border-l-3 border-brand-400 pl-3 my-2 text-gray-600 italic">$1</blockquote>',
-  );
-
-  // Paragraphs (double newline)
-  html = html.replace(/\n\n/g, '</p><p class="mt-2">');
-
-  // Single newlines
-  html = html.replace(/\n/g, "<br>");
-
-  return `<p>${html}</p>`;
-}
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // eslint-disable-next-line no-restricted-properties
+  let result = content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  // eslint-disable-next-line no-restricted-properties
+  return result.replace(/\n/g, "<br>");
 }
 
 onMounted(() => {
@@ -378,37 +334,33 @@ onMounted(() => {
     </div>
 
     <!-- Example chips -->
-    <div v-if="messages.length === 0" class="px-5 pb-3 flex flex-wrap gap-2">
+    <div v-if="messages.length === 0" class="px-4 pb-2 flex flex-wrap gap-2">
       <button
-        v-for="(chip, idx) in exampleChips"
+        v-for="chip in exampleChips"
         :key="chip"
-        class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-gray-200 text-gray-700 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700 active:bg-brand-100 transition-all duration-200 shadow-sm hover:shadow-md"
+        class="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-brand-50 hover:text-brand-700 transition-colors"
         @click="useChip(chip)"
-        :style="{
-          animation: `slideUp 0.4s ease-out ${0.5 + idx * 0.1}s backwards`,
-        }"
       >
         {{ chip }}
       </button>
     </div>
 
     <!-- Input -->
-    <div
-      class="border-t border-gray-200/60 p-4 bg-gradient-to-t from-white via-white to-gray-50 backdrop-blur-sm"
-    >
+    <div class="border-t border-gray-200/60 p-4 bg-gradient-to-t from-white via-white to-gray-50 backdrop-blur-sm">
       <div class="flex items-end gap-3">
         <textarea
           ref="textareaRef"
           v-model="inputText"
           placeholder="Still et spørsmål…"
           rows="1"
+          :style="{ minHeight: textAreaHeight + 'px' }"
           class="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent placeholder:text-gray-400 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all"
           @keydown="handleKeydown"
           @input="autoResize"
         ></textarea>
         <button
           :disabled="!inputText.trim() || isLoading"
-          class="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-brand-700 text-white flex items-center justify-center hover:from-brand-700 hover:to-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 shadow-lg hover:shadow-xl"
+          class="flex-shrink-0 w-10 h-10 rounded-xl bg-brand-700 text-white flex items-center justify-center hover:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           aria-label="Send melding"
           @click="handleSend"
         >
@@ -427,51 +379,45 @@ onMounted(() => {
           </svg>
         </button>
       </div>
-      <p class="text-[10px] text-gray-400 mt-1.5 text-center">
-        Enter for å sende · Shift+Enter for ny linje
-      </p>
+      <p class="text-xs text-gray-400 mt-1.5">💡 Trykk Enter for å sende, eller Shift+Enter for ny linje</p>
     </div>
+
+    <!-- CSS animations -->
+    <style scoped>
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes slideUp {
+        from {
+          opacity: 0;
+          transform: translateY(10px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+
+      @keyframes float {
+        0%, 100% {
+          transform: translateY(0px);
+        }
+        50% {
+          transform: translateY(-10px);
+        }
+      }
+
+      .scroll-smooth {
+        scroll-behavior: smooth;
+      }
+    </style>
   </div>
 </template>
-
-<style scoped>
-@keyframes slideUp {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-@keyframes float {
-  0%,
-  100% {
-    transform: translateY(0px);
-  }
-  50% {
-    transform: translateY(-10px);
-  }
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.25s ease-out;
-}
-
-.scroll-smooth {
-  scroll-behavior: smooth;
-}
-</style>
