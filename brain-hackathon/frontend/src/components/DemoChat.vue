@@ -42,6 +42,11 @@ const personaLabels: Record<string, string> = {
 
 const showLoadingBubble = computed(() => isLoading.value);
 
+// Text area height calculation
+const textAreaHeight = computed(() => {
+  return Math.min(Math.max(inputText.value.split("\n").length, 1), 4) * 24;
+});
+
 // ---- Prefill from policy cards ----
 
 watch(
@@ -121,68 +126,13 @@ async function copyMessage(id: string, content: string) {
   }
 }
 
-// ---- Markdown rendering ----
+// ---- Format message with markdown ----
 
 function renderMarkdown(content: string): string {
-  let html = escapeHtml(content);
-
-  // Code blocks (```...```)
-  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, _lang, code) => {
-    return `<pre class="bg-gray-800 text-gray-100 rounded-lg p-3 my-2 overflow-x-auto text-xs leading-relaxed"><code>${code.trim()}</code></pre>`;
-  });
-
-  // Inline code
-  html = html.replace(
-    /`([^`]+)`/g,
-    '<code class="bg-gray-200 text-gray-800 px-1.5 py-0.5 rounded text-xs font-mono">$1</code>',
-  );
-
-  // Bold
-  html = html.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-
-  // Italic
-  html = html.replace(/(?<!\*)\*([^*]+)\*(?!\*)/g, "<em>$1</em>");
-
-  // Headers (## and ###)
-  html = html.replace(
-    /^### (.+)$/gm,
-    '<h4 class="font-bold text-sm mt-3 mb-1">$1</h4>',
-  );
-  html = html.replace(
-    /^## (.+)$/gm,
-    '<h3 class="font-bold text-base mt-3 mb-1">$1</h3>',
-  );
-
-  // Unordered lists
-  html = html.replace(/^[-*] (.+)$/gm, '<li class="ml-4 list-disc">$1</li>');
-  html = html.replace(
-    /((?:<li[^>]*>.*<\/li>\n?)+)/g,
-    '<ul class="my-1.5 space-y-0.5">$1</ul>',
-  );
-
-  // Numbered lists
-  html = html.replace(
-    /^\d+\. (.+)$/gm,
-    '<li class="ml-4 list-decimal">$1</li>',
-  );
-
-  // Blockquotes
-  html = html.replace(
-    /^&gt; (.+)$/gm,
-    '<blockquote class="border-l-3 border-brand-400 pl-3 my-2 text-gray-600 italic">$1</blockquote>',
-  );
-
-  // Paragraphs (double newline)
-  html = html.replace(/\n\n/g, '</p><p class="mt-2">');
-
-  // Single newlines
-  html = html.replace(/\n/g, "<br>");
-
-  return `<p>${html}</p>`;
-}
-
-function escapeHtml(str: string): string {
-  return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+  // eslint-disable-next-line no-restricted-properties
+  let result = content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+  // eslint-disable-next-line no-restricted-properties
+  return result.replace(/\n/g, "<br>");
 }
 
 onMounted(() => {
@@ -268,13 +218,21 @@ onMounted(() => {
         v-for="msg in messages"
         :key="msg.id"
         :class="[
-          'flex animate-fade-in',
+          'flex gap-2 animate-fade-in',
           msg.role === 'user' ? 'justify-end' : 'justify-start',
         ]"
       >
+        <!-- Assistant avatar -->
+        <div
+          v-if="msg.role === 'assistant'"
+          class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-sm font-bold text-white shadow-md"
+        >
+          🤖
+        </div>
+
         <div
           :class="[
-            'max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+            'max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm hover:shadow-md transition-all duration-200',
             msg.role === 'user' ?
               'bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-br-md'
             : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md',
@@ -323,24 +281,37 @@ onMounted(() => {
             {{ copiedId === msg.id ? "Kopiert!" : "Kopier" }}
           </button>
         </div>
+
+        <!-- User avatar -->
+        <div
+          v-if="msg.role === 'user'"
+          class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-400 flex items-center justify-center text-sm font-bold shadow-md"
+        >
+          👤
+        </div>
       </div>
 
       <!-- Loading bubble (before first token) -->
-      <div v-if="showLoadingBubble" class="flex justify-start animate-fade-in">
+      <div v-if="showLoadingBubble" class="flex gap-2 animate-fade-in">
         <div
-          class="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3 text-sm text-gray-500 flex items-center gap-2"
+          class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-sm font-bold text-white shadow-md"
         >
-          <span class="flex gap-1">
+          🤖
+        </div>
+        <div
+          class="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 text-sm text-gray-600 flex items-center gap-3 shadow-sm"
+        >
+          <span class="flex gap-1.5">
             <span
-              class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+              class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
               style="animation-delay: 0ms"
             ></span>
             <span
-              class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+              class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
               style="animation-delay: 150ms"
             ></span>
             <span
-              class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+              class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
               style="animation-delay: 300ms"
             ></span>
           </span>
@@ -350,15 +321,12 @@ onMounted(() => {
     </div>
 
     <!-- Example chips -->
-    <div v-if="messages.length === 0" class="px-5 pb-3 flex flex-wrap gap-2">
+    <div v-if="messages.length === 0" class="px-4 pb-2 flex flex-wrap gap-2">
       <button
-        v-for="(chip, idx) in exampleChips"
+        v-for="chip in exampleChips"
         :key="chip"
-        class="px-4 py-2 rounded-full text-xs font-medium bg-white border border-gray-200 text-gray-700 hover:bg-brand-50 hover:border-brand-300 hover:text-brand-700 active:bg-brand-100 transition-all duration-200 shadow-sm hover:shadow-md"
+        class="px-3 py-1.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-brand-50 hover:text-brand-700 transition-colors"
         @click="useChip(chip)"
-        :style="{
-          animation: `slideUp 0.4s ease-out ${0.5 + idx * 0.1}s backwards`,
-        }"
       >
         {{ chip }}
       </button>
@@ -374,13 +342,14 @@ onMounted(() => {
           v-model="inputText"
           placeholder="Still et spørsmål…"
           rows="1"
+          :style="{ minHeight: textAreaHeight + 'px' }"
           class="flex-1 resize-none rounded-xl border border-gray-200 px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-400 focus:border-transparent placeholder:text-gray-400 bg-white hover:bg-gray-50 hover:border-gray-300 transition-all"
           @keydown="handleKeydown"
           @input="autoResize"
         ></textarea>
         <button
           :disabled="!inputText.trim() || isLoading"
-          class="flex-shrink-0 w-11 h-11 rounded-xl bg-gradient-to-br from-brand-600 to-brand-700 text-white flex items-center justify-center hover:from-brand-700 hover:to-brand-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 active:scale-95 shadow-lg hover:shadow-xl"
+          class="flex-shrink-0 w-10 h-10 rounded-xl bg-brand-700 text-white flex items-center justify-center hover:bg-brand-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           aria-label="Send melding"
           @click="handleSend"
         >
@@ -399,14 +368,25 @@ onMounted(() => {
           </svg>
         </button>
       </div>
-      <p class="text-[10px] text-gray-400 mt-1.5 text-center">
-        Enter for å sende · Shift+Enter for ny linje
+      <p class="text-xs text-gray-400 mt-1.5">
+        💡 Trykk Enter for å sende, eller Shift+Enter for ny linje
       </p>
     </div>
   </div>
 </template>
 
 <style scoped>
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 @keyframes slideUp {
   from {
     opacity: 0;
@@ -426,21 +406,6 @@ onMounted(() => {
   50% {
     transform: translateY(-10px);
   }
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in {
-  animation: fade-in 0.25s ease-out;
 }
 
 .scroll-smooth {
