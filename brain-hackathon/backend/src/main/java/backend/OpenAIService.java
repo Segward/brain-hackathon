@@ -34,7 +34,9 @@ public class OpenAIService {
     }
 
     private Mono<Void> ensureFactEmbedding(String fact) {
-        if (factVec != null) return Mono.empty();
+        if (factVec != null) {
+            return Mono.empty();
+        }
         return embed(fact).doOnNext(v -> factVec = v).then();
     }
 
@@ -46,8 +48,8 @@ public class OpenAIService {
         Map<String, Object> body = Map.of(
                 "model", "openai/gpt-oss-120b",
                 "messages", new Object[]{
-                        Map.of("role", "system", "content", system),
-                        Map.of("role", "user", "content", prompt)
+                    Map.of("role", "system", "content", system),
+                    Map.of("role", "user", "content", prompt)
                 }
         );
 
@@ -86,7 +88,9 @@ public class OpenAIService {
         try {
             JsonNode a = json.readTree(s).path("data").get(0).path("embedding");
             double[] v = new double[a.size()];
-            for (int i = 0; i < a.size(); i++) v[i] = a.get(i).asDouble();
+            for (int i = 0; i < a.size(); i++) {
+                v[i] = a.get(i).asDouble();
+            }
             return v;
         } catch (Exception e) {
             throw new RuntimeException("Embedding parse error: " + e.getMessage(), e);
@@ -94,7 +98,9 @@ public class OpenAIService {
     }
 
     private static double cosine(double[] a, double[] b) {
-        if (a == null || b == null || a.length != b.length) return -1;
+        if (a == null || b == null || a.length != b.length) {
+            return -1;
+        }
         double dot = 0, na = 0, nb = 0;
         for (int i = 0; i < a.length; i++) {
             dot += a[i] * b[i];
