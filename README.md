@@ -1,1 +1,1 @@
-# brain-hackathon
+# Brain-hackathon 2026
