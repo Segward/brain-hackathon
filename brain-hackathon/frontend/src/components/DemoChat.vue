@@ -247,13 +247,21 @@ onMounted(() => {
         v-for="msg in messages"
         :key="msg.id"
         :class="[
-          'flex animate-fade-in',
+          'flex gap-2 animate-fade-in',
           msg.role === 'user' ? 'justify-end' : 'justify-start',
         ]"
       >
+        <!-- Assistant avatar -->
+        <div
+          v-if="msg.role === 'assistant'"
+          class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-sm font-bold text-white shadow-md"
+        >
+          🤖
+        </div>
+
         <div
           :class="[
-            'max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed',
+            'max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed shadow-sm hover:shadow-md transition-all duration-200',
             msg.role === 'user' ?
               'bg-gradient-to-br from-brand-600 to-brand-700 text-white rounded-br-md'
             : 'bg-white border border-gray-200 text-gray-800 rounded-bl-md',
@@ -276,7 +284,7 @@ onMounted(() => {
 
           <button
             v-if="msg.role === 'assistant' && streamingId !== msg.id"
-            class="mt-2 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
+            class="mt-2.5 inline-flex items-center gap-1.5 text-xs text-gray-400 hover:text-gray-600 transition-colors hover:bg-gray-100 px-2 py-1 rounded"
             :aria-label="copiedId === msg.id ? 'Kopiert' : 'Kopier svar'"
             @click="copyMessage(msg.id, msg.content)"
           >
@@ -307,24 +315,35 @@ onMounted(() => {
             {{ copiedId === msg.id ? "Kopiert!" : "Kopier" }}
           </button>
         </div>
+
+        <!-- User avatar -->
+        <div
+          v-if="msg.role === 'user'"
+          class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-yellow-400 to-orange-400 flex items-center justify-center text-sm font-bold shadow-md"
+        >
+          👤
+        </div>
       </div>
 
       <!-- Loading bubble (before first token) -->
-      <div v-if="showLoadingBubble" class="flex justify-start animate-fade-in">
+      <div v-if="showLoadingBubble" class="flex gap-2 animate-fade-in">
+        <div class="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-brand-600 to-brand-700 flex items-center justify-center text-sm font-bold text-white shadow-md">
+          🤖
+        </div>
         <div
-          class="bg-gray-100 rounded-2xl rounded-bl-md px-4 py-3 text-sm text-gray-500 flex items-center gap-2"
+          class="bg-white border border-gray-200 rounded-2xl rounded-bl-md px-4 py-3 text-sm text-gray-600 flex items-center gap-3 shadow-sm"
         >
-          <span class="flex gap-1">
+          <span class="flex gap-1.5">
             <span
-              class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+              class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
               style="animation-delay: 0ms"
             ></span>
             <span
-              class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+              class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
               style="animation-delay: 150ms"
             ></span>
             <span
-              class="w-1.5 h-1.5 bg-gray-400 rounded-full animate-bounce"
+              class="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
               style="animation-delay: 300ms"
             ></span>
           </span>
@@ -381,43 +400,42 @@ onMounted(() => {
       </div>
       <p class="text-xs text-gray-400 mt-1.5">💡 Trykk Enter for å sende, eller Shift+Enter for ny linje</p>
     </div>
-
-    <!-- CSS animations -->
-    <style scoped>
-      @keyframes slideIn {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes slideUp {
-        from {
-          opacity: 0;
-          transform: translateY(10px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      @keyframes float {
-        0%, 100% {
-          transform: translateY(0px);
-        }
-        50% {
-          transform: translateY(-10px);
-        }
-      }
-
-      .scroll-smooth {
-        scroll-behavior: smooth;
-      }
-    </style>
   </div>
 </template>
+
+<style scoped>
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+</style>
