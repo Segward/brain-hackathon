@@ -1,16 +1,45 @@
-# React + Vite
+# Autonomipartiet Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Vue 3 + Vite + TypeScript + Tailwind CSS
 
-Currently, two official plugins are available:
+## Getting started
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+```bash
+npm install
+npm run dev
+```
 
-## React Compiler
+## Routes
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+| Route            | Description                                      |
+| ---------------- | ------------------------------------------------ |
+| `/`              | Landing page with hero, demo chat, avatars, FAQ  |
+| `/partiprogram`  | Data-driven Party Program Simulator               |
 
-## Expanding the ESLint configuration
+## Partiprogram Simulator (`/partiprogram`)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+An interactive policy simulator that lets you explore how Autonomipartiet approaches future challenges using data, sources, and evidence.
+
+### How it works
+
+1. **Select a case** from the left sidebar (7 cases: Utdanning, Klima, Arbeid, Transport, Borgerlonn, Energi, Offentlig sektor).
+2. **Adjust assumptions** using the scenario controls: AI-adopsjon (Lav/Medium/Hoy), Budsjett (Begrenset/Normal/Ambisios), Tidshorisont (2/5/10 ar).
+3. **View the results**: KPIs, charts (line + bar), net effect score, policy measures, evidence cards, sources, news, and risk assessment all update in real-time.
+
+### Key features
+
+- Deterministic mock calculations via `computeScenario()` in `src/data/partyCases.ts`
+- ECharts-powered line and bar charts
+- Radial gauge for net policy effect score (0-100)
+- Evidence cards with source references
+- Credible source list with confidence tags (Hoy/Medium/Lav)
+- News cards (mock data, structured for future API replacement)
+- Responsive layout: 2-column desktop, stacked mobile
+
+### Tech stack
+
+- **Vue 3** (Composition API + `<script setup>`)
+- **Vue Router** for page routing
+- **ECharts** via `vue-echarts` for data visualization
+- **Tailwind CSS** for styling
+- **TypeScript** with strict mode
