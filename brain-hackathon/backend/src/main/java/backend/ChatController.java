@@ -3,6 +3,7 @@ package backend;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
+@CrossOrigin(origins = "http://localhost:5174")
 @RestController
 @RequestMapping("/api/chat")
 public class ChatController {
