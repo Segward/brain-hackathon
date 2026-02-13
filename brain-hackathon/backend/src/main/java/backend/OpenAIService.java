@@ -8,13 +8,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Service
 public class OpenAIService {
 
     private final WebClient web;
     private final ObjectMapper json = new ObjectMapper();
-    private volatile double[] factVec;
+    private final AtomicReference<double[]> factVec = new AtomicReference<>();
 
     public OpenAIService(@Value("${openai.api.key}") String apiKey) {
         this.web = WebClient.builder()
@@ -29,15 +30,15 @@ public class OpenAIService {
 
         return ensureFactEmbedding(fact)
                 .then(embed(prompt))
-                .map(q -> cosine(q, factVec) >= 0.4 ? fact : "")
+                .map(q -> cosine(q, factVec.get()) >= 0.4 ? fact : "")
                 .flatMap(f -> chat(prompt, f));
     }
 
     private Mono<Void> ensureFactEmbedding(String fact) {
-        if (factVec != null) {
+        if (factVec.get() != null) {
             return Mono.empty();
         }
-        return embed(fact).doOnNext(v -> factVec = v).then();
+        return embed(fact).doOnNext(v -> factVec.set(v)).then();
     }
 
     private Mono<String> chat(String prompt, String fact) {
