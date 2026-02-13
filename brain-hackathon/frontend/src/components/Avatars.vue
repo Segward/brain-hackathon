@@ -1,9 +1,26 @@
 <script setup lang="ts">
+import { computed } from "vue";
 import { useCopilotState } from "@/composables/useCopilotState";
 import { useAvatarSpeech } from "@/composables/useAvatarSpeech";
 
+const props = defineProps<{
+  compact?: boolean;
+}>();
+
 const { persona, setPersona } = useCopilotState();
 const { mouthOpen, isSpeaking, stopSpeaking } = useAvatarSpeech();
+
+const rootClass = computed(() =>
+  props.compact
+    ? ""
+    : "py-20 bg-brand-950 overflow-hidden"
+);
+
+const containerClass = computed(() =>
+  props.compact
+    ? ""
+    : "max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"
+);
 
 interface AvatarProfile {
   id: "leader" | "education" | "tech";
@@ -71,38 +88,40 @@ const avatars: AvatarProfile[] = [
     blushColor: "rgba(230,140,140,0.22)",
   },
 ];
-
 </script>
 
 <template>
-  <section id="avatarer" class="py-20 bg-brand-950 overflow-hidden">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-14">
-        <h2
-          class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight"
-        >
+  <section :id="props.compact ? undefined : 'avatarer'" :class="rootClass">
+    <div :class="containerClass">
+      <div class="text-center mb-10" v-if="!props.compact">
+        <h2 class="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
           Våre AI-rådgivere
         </h2>
         <p class="mt-3 text-lg text-blue-300/80 max-w-2xl mx-auto">
-          Velg en persona og få svar tilpasset deres ekspertise og
-          personlighet.
+          Velg en persona og få svar tilpasset deres ekspertise og personlighet.
         </p>
       </div>
 
-      <div class="grid sm:grid-cols-3 gap-6 lg:gap-10 max-w-5xl mx-auto">
+      <div
+        class="grid sm:grid-cols-3 gap-6 lg:gap-8"
+        :class="props.compact ? 'bg-white rounded-2xl border border-gray-200 p-4 shadow-sm' : 'max-w-5xl mx-auto'"
+      >
         <button
           v-for="av in avatars"
           :key="av.id"
           class="group avatar-card focus:outline-none"
           :class="{ active: persona === av.id }"
-          @click="setPersona(av.id)"
+          @click="() => { stopSpeaking(); setPersona(av.id); }"
         >
           <div
             class="portrait-frame"
             :class="{ 'is-active': persona === av.id }"
           >
             <!-- Background -->
-            <div class="portrait-bg" :style="{ background: `rgba(8,12,30,1)` }"></div>
+            <div
+              class="portrait-bg"
+              :style="{ background: `rgba(8,12,30,1)` }"
+            ></div>
 
             <!-- SVG Character Illustration -->
             <svg
@@ -148,9 +167,9 @@ const avatars: AvatarProfile[] = [
               <!-- Shoulders & torso -->
               <path
                 :d="
-                  av.id === 'education'
-                    ? 'M60,380 L60,295 Q60,260 90,250 L120,240 Q140,235 140,220 L140,218 L160,218 L160,220 Q160,235 180,240 L210,250 Q240,260 240,295 L240,380 Z'
-                    : 'M55,380 L55,300 Q55,265 85,252 L115,240 Q140,232 140,218 L160,218 Q160,232 185,240 L215,252 Q245,265 245,300 L245,380 Z'
+                  av.id === 'education' ?
+                    'M60,380 L60,295 Q60,260 90,250 L120,240 Q140,235 140,220 L140,218 L160,218 L160,220 Q160,235 180,240 L210,250 Q240,260 240,295 L240,380 Z'
+                  : 'M55,380 L55,300 Q55,265 85,252 L115,240 Q140,232 140,218 L160,218 Q160,232 185,240 L215,252 Q245,265 245,300 L245,380 Z'
                 "
                 :fill="av.outfitColor"
               />
@@ -170,16 +189,8 @@ const avatars: AvatarProfile[] = [
                 fill="none"
               />
               <!-- Collar / V-neck -->
-              <path
-                d="M125,235 L140,270 L150,218"
-                fill="white"
-                opacity="0.9"
-              />
-              <path
-                d="M175,235 L160,270 L150,218"
-                fill="white"
-                opacity="0.9"
-              />
+              <path d="M125,235 L140,270 L150,218" fill="white" opacity="0.9" />
+              <path d="M175,235 L160,270 L150,218" fill="white" opacity="0.9" />
               <!-- Tie / Accessory for education -->
               <path
                 v-if="av.id === 'education'"
@@ -272,13 +283,7 @@ const avatars: AvatarProfile[] = [
                 <g class="eyes-group">
                   <!-- Left eye -->
                   <g class="eye blink-eye">
-                    <ellipse
-                      cx="127"
-                      cy="144"
-                      rx="13"
-                      ry="10"
-                      fill="white"
-                    />
+                    <ellipse cx="127" cy="144" rx="13" ry="10" fill="white" />
                     <ellipse
                       cx="128"
                       cy="145"
@@ -301,13 +306,7 @@ const avatars: AvatarProfile[] = [
                   </g>
                   <!-- Right eye -->
                   <g class="eye blink-eye">
-                    <ellipse
-                      cx="173"
-                      cy="144"
-                      rx="13"
-                      ry="10"
-                      fill="white"
-                    />
+                    <ellipse cx="173" cy="144" rx="13" ry="10" fill="white" />
                     <ellipse
                       cx="172"
                       cy="145"
@@ -608,14 +607,20 @@ const avatars: AvatarProfile[] = [
           <div class="mt-5 text-center">
             <div
               class="text-[10px] font-bold uppercase tracking-[0.2em] mb-1 transition-colors"
-              :class="
-                persona === av.id ? 'text-cyan-400' : 'text-blue-400/50'
-              "
+              :class="persona === av.id ? 'text-cyan-400' : 'text-blue-400/50'"
             >
               {{ av.title }}
             </div>
-            <h3 class="text-lg font-bold text-white">{{ av.name }}</h3>
-            <p class="mt-1 text-xs text-blue-300/60 leading-relaxed">
+            <h3
+              class="text-lg font-bold"
+              :class="props.compact ? 'text-gray-900' : 'text-white'"
+            >
+              {{ av.name }}
+            </h3>
+            <p
+              class="mt-1 text-xs leading-relaxed"
+              :class="props.compact ? 'text-gray-600' : 'text-blue-300/60'"
+            >
               {{ av.description }}
             </p>
 

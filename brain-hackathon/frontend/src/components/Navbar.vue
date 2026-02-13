@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import { ref } from "vue";
+import { useRoute } from "vue-router";
 
 const mobileOpen = ref(false);
+const route = useRoute();
 
-const links = [
-  { label: "Politikk", href: "#politikk" },
-  { label: "Demo", href: "#demo" },
-  { label: "Avatarer", href: "#avatarer" },
-  { label: "FAQ", href: "#faq" },
+const anchorLinks = [
+  { label: "Demo", href: "/#demo" },
 ];
 </script>
 
@@ -18,18 +17,18 @@ const links = [
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
       <div class="flex items-center justify-between h-16">
         <!-- Logo -->
-        <a
-          href="#"
+        <router-link
+          to="/"
           class="flex items-center gap-2 font-bold text-xl text-brand-800"
         >
           <span class="text-2xl">🏛️</span>
           <span>Autonomipartiet</span>
-        </a>
+        </router-link>
 
         <!-- Desktop links -->
-        <div class="hidden md:flex items-center gap-8">
+        <div class="hidden md:flex items-center gap-6">
           <a
-            v-for="link in links"
+            v-for="link in anchorLinks"
             :key="link.href"
             :href="link.href"
             class="text-sm font-medium text-gray-600 hover:text-brand-700 transition-colors"
@@ -37,7 +36,7 @@ const links = [
             {{ link.label }}
           </a>
           <a
-            href="#demo"
+            href="/#demo"
             class="inline-flex items-center px-4 py-2 rounded-lg bg-brand-700 text-white text-sm font-semibold hover:bg-brand-800 transition-colors shadow-sm"
           >
             Prøv AI-rådgiveren
@@ -84,7 +83,7 @@ const links = [
       <!-- Mobile menu -->
       <div v-if="mobileOpen" class="md:hidden pb-4 space-y-2">
         <a
-          v-for="link in links"
+          v-for="link in anchorLinks"
           :key="link.href"
           :href="link.href"
           class="block px-3 py-2 rounded-md text-base font-medium text-gray-700 hover:bg-gray-100"
@@ -93,7 +92,7 @@ const links = [
           {{ link.label }}
         </a>
         <a
-          href="#demo"
+          href="/#demo"
           class="block px-3 py-2 rounded-md text-base font-semibold text-white bg-brand-700 hover:bg-brand-800"
           @click="mobileOpen = false"
         >

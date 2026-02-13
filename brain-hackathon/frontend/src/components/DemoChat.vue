@@ -2,16 +2,8 @@
 import { ref, nextTick, watch, onMounted, computed } from "vue";
 import { useCopilotState } from "@/composables/useCopilotState";
 
-const {
-  messages,
-  selectedModel,
-  useRag,
-  persona,
-  isLoading,
-  streamingId,
-  send,
-  clearChat,
-} = useCopilotState();
+const { messages, selectedModel, persona, isLoading, send, clearChat } =
+  useCopilotState();
 
 const props = defineProps<{
   prefillText?: string;
@@ -48,10 +40,7 @@ const personaLabels: Record<string, string> = {
   tech: "Teknologiminister",
 };
 
-// Show loading only when waiting for first token
-const showLoadingBubble = computed(() => {
-  return isLoading.value && !streamingId.value;
-});
+const showLoadingBubble = computed(() => isLoading.value);
 
 // ---- Prefill from policy cards ----
 
@@ -221,18 +210,6 @@ onMounted(() => {
         </select>
       </div>
 
-      <label
-        class="flex items-center gap-2.5 text-xs font-medium text-gray-700 cursor-pointer hover:text-gray-900 transition-colors"
-      >
-        <div class="relative">
-          <input type="checkbox" v-model="useRag" class="sr-only peer" />
-          <div
-            class="w-10 h-5 bg-gray-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-brand-400 rounded-full peer peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-gradient-to-r peer-checked:from-brand-600 peer-checked:to-brand-700 shadow-sm"
-          ></div>
-        </div>
-        RAG (partiprogram)
-      </label>
-
       <div class="ml-auto flex items-center gap-3">
         <span class="text-xs text-gray-400">
           <strong class="text-gray-600">{{ personaLabels[persona] }}</strong>
@@ -282,7 +259,7 @@ onMounted(() => {
           AI-rådgiveren
         </h3>
         <p class="text-sm text-gray-600 mt-3 max-w-sm leading-relaxed">
-          Still et spørsmål om Autonomipartiets politikk for å komme i gang.
+          Still et spørsmål for å komme i gang.
         </p>
       </div>
 
@@ -313,13 +290,8 @@ onMounted(() => {
             v-html="renderMarkdown(msg.content)"
           ></div>
 
-          <span
-            v-if="msg.role === 'assistant' && streamingId === msg.id"
-            class="inline-block w-1.5 h-4 bg-brand-600 rounded-sm animate-pulse ml-0.5 align-text-bottom"
-          ></span>
-
           <button
-            v-if="msg.role === 'assistant' && streamingId !== msg.id"
+            v-if="msg.role === 'assistant'"
             class="mt-2 inline-flex items-center gap-1 text-xs text-gray-400 hover:text-gray-600 transition-colors"
             :aria-label="copiedId === msg.id ? 'Kopiert' : 'Kopier svar'"
             @click="copyMessage(msg.id, msg.content)"

@@ -261,7 +261,7 @@ function stopSpeaking() {
 // ===== COMPOSABLE EXPORT =====
 
 export function useAvatarSpeech() {
-  const { messages, streamingId, isLoading, persona } = useCopilotState()
+  const { messages, isLoading, persona } = useCopilotState()
 
   function speakLastAssistantMessage() {
     const lastMsg = messages.value[messages.value.length - 1]
@@ -271,18 +271,18 @@ export function useAvatarSpeech() {
     }
   }
 
-  // Watch for streaming to finish
-  watch(streamingId, (newVal, oldVal) => {
-    if (oldVal && !newVal) {
-      // Small delay to ensure full text is rendered
-      setTimeout(() => speakLastAssistantMessage(), 200)
+  // Speak whenever a new assistant message is appended
+  watch(
+    () => messages.value.length,
+    () => {
+      setTimeout(() => speakLastAssistantMessage(), 150)
     }
-  })
+  )
 
-  // Fallback for non-streaming
+  // Fallback when loading finishes without new message
   watch(isLoading, (newVal, oldVal) => {
-    if (oldVal && !newVal && !streamingId.value) {
-      setTimeout(() => speakLastAssistantMessage(), 200)
+    if (oldVal && !newVal) {
+      setTimeout(() => speakLastAssistantMessage(), 150)
     }
   })
 
