@@ -1,2 +1,3 @@
-backend/HelloController.class
+backend/OpenAIService.class
 backend/App.class
+backend/ChatController.class
