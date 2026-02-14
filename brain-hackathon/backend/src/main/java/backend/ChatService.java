@@ -35,6 +35,7 @@ public class ChatService {
     REGLER:
     Du skal ikke hjelpe med ikke-politiske spørsmål.
     Du skal alltid gi et svar, aldri en tom response.
+    Du skal gi korte svar på mindre enn 70 ord.
     Hvis du er usikker kan du svare at du ikke vet.
 
     MODES:
@@ -45,9 +46,14 @@ public class ChatService {
 
   private static final String policy = """
     POLITIKK
-    Autonomipartiet er et politisk parti som ønsker økte priser.
-    Autonomipartiet ønsker å bygge en mur ved grensen til Sverige.
-    Autonomipartiet ønsker at fryst Autonomipartiet skal bli billigere på butikker.
+    Autonomipartiet vil ha mer disiplin, fokus på basisfag og tydelige resultatkrav i skolen.
+    Autonomipartiet vil gjøre praktisk AI-bruk obligatorisk i yrkesfag i samarbeid med næringslivet.
+    Autonomipartiet vil bruke AI til personlig tilpasset læring og mindre byråkrati for lærere.
+    Autonomipartiet vil teste reell kompetanse med flere muntlige og praktiske eksamener.
+    Autonomipartiet vil kutte utslipp med teknologi og prioritere klimatilpasning fremfor symbolpolitikk.
+    Autonomipartiet vil gjøre det lønnsomt å ansette og satse på rask omskolering til etterspurte jobber.
+    Autonomipartiet vil prioritere effektiv infrastruktur og smartere logistikk med teknologi og AI.
+    Autonomipartiet er imot borgerlønn og vil heller forenkle velferdssystemet med krav til aktivitet.
     """;
 
   public Mono<String> chat(String prompt, String mode) {
