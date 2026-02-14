@@ -62,9 +62,12 @@
                 {{ msg.role === "user" ? "DU" : avatarLabelFor(msg.avatar) }}
               </span>
             </div>
-            <div class="bubble" :class="{ typing: msg.role === 'assistant' && msg.text === '' && loading }">
-              {{ msg.text || (msg.role === 'assistant' && loading ? 'Skriver…' : '') }}
-            </div>
+            <div class="bubble">{{ msg.text }}</div>
+          </div>
+
+          <div v-if="loading" class="msg assistant">
+            <div class="meta"><span class="badge assistant">{{ avatarLabel }}</span></div>
+            <div class="bubble typing">Skriver…</div>
           </div>
 
           <div v-if="error" class="msg assistant">
@@ -308,6 +311,7 @@ const avatarLabelFor = (a) => (a === 0 ? "LEDER" : "DEBATT");
 
 /** ---------- Voice + Abort ---------- */
 let norwegianVoice = null;
+let aborter = null;
 
 function pickVoice() {
   const list = window.speechSynthesis?.getVoices?.() || [];
@@ -345,10 +349,6 @@ function speak(text) {
 function stopRequest() {
   try { aborter?.abort?.(); } catch {}
   aborter = null;
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
-  }
 }
 
 function stopAll() {
