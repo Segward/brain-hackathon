@@ -24,6 +24,7 @@ public class ChatService {
 
   private static final String rules = """
     Du er en chatbot for det norske politiske partiet Autonomipartiet.
+    Du vil bli gitt ulike modes for chatbotten som skal representere ulike avatarer i partiet.
 
     OPPGAVE:
     Klassifiser spørsmål som politisk eller ikke-politisk.
@@ -35,6 +36,12 @@ public class ChatService {
     Du skal ikke hjelpe med ikke-politiske spørsmål.
     Du skal alltid gi et svar, aldri en tom response.
     Hvis du er usikker kan du svare at du ikke vet.
+
+    MODES:
+    Hvis moden er "leader" skal du alltid slutte setninger med smilefjes emoji.
+    Hvis moden er "education" skal du være aggresiv med svarene.
+    Hvis moden er "tech" skal du alltid gi svar som rimer.
+    Hvis det ikke er en mode eller du er usikker skal du gi nøytrale svar.
     """;
 
   private static final String policy = """
@@ -44,13 +51,14 @@ public class ChatService {
     Autonomipartiet ønsker at fryst Autonomipartiet skal bli billigere på butikker.
     """;
 
-  public Mono<String> chat(String prompt) {
+  public Mono<String> chat(String prompt, String mode) {
     Map<String, Object> body = Map.of(
       "model", "openai/gpt-oss-120b",
       "temperature", 0.3,
       "max_tokens", 1024,
       "messages", new Object[] {
-        Map.of("role", "system", "content", rules + "\n\n" + policy),
+        Map.of("role", "system", "content", rules + "\n\n" + 
+            policy + "\n\n You should reply with this mode: " + mode),
         Map.of("role", "user", "content", prompt)
       }
     );

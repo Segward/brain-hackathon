@@ -14,7 +14,7 @@ public class ChatController {
   }
 
   @GetMapping
-  public Mono<String> chat(@RequestParam String message) {
-    return chatService.chat(message);
+  public Mono<String> chat(@RequestParam String message, @RequestParam String mode) {
+    return chatService.chat(message, mode);
   }
 }

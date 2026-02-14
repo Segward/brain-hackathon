@@ -42,12 +42,9 @@ const personaLabels: Record<string, string> = {
 
 const showLoadingBubble = computed(() => isLoading.value);
 
-// Text area height calculation
 const textAreaHeight = computed(() => {
   return Math.min(Math.max(inputText.value.split("\n").length, 1), 4) * 24;
 });
-
-// ---- Prefill from policy cards ----
 
 watch(
   () => props.prefillText,
@@ -64,8 +61,6 @@ watch(
   },
 );
 
-// ---- Auto-scroll (deep watch to catch streaming updates) ----
-
 function scrollToBottom() {
   nextTick(() => {
     if (messagesContainer.value) {
@@ -76,8 +71,6 @@ function scrollToBottom() {
 
 watch(messages, () => scrollToBottom(), { deep: true });
 watch(showLoadingBubble, () => scrollToBottom());
-
-// ---- Input handling ----
 
 async function handleSend() {
   const text = inputText.value;
@@ -99,8 +92,6 @@ function useChip(chip: string) {
   nextTick(autoResize);
 }
 
-// ---- Auto-resize textarea ----
-
 function autoResize() {
   const el = textareaRef.value;
   if (!el) return;
@@ -114,8 +105,6 @@ function resetTextareaHeight() {
   el.style.height = "auto";
 }
 
-// ---- Copy ----
-
 async function copyMessage(id: string, content: string) {
   try {
     await navigator.clipboard.writeText(content);
@@ -126,12 +115,8 @@ async function copyMessage(id: string, content: string) {
   }
 }
 
-// ---- Format message with markdown ----
-
 function renderMarkdown(content: string): string {
-  // eslint-disable-next-line no-restricted-properties
   let result = content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
-  // eslint-disable-next-line no-restricted-properties
   return result.replace(/\n/g, "<br>");
 }
 
