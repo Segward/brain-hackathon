@@ -25,11 +25,25 @@ services:
       - app-network
     restart: unless-stopped
 
+  temp-frontend:
+    build:
+      context: ./temp
+      dockerfile: Dockerfile
+    container_name: brain-hackathon-temp
+    ports:
+      - "3001:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    restart: unless-stopped
+
 networks:
   app-network:
     driver: bridge
 
-  #  - Builds both backend and frontend
+  #  - Builds backend and both frontends
   #  - Backend runs on localhost:8080
   #  - Frontend runs on localhost:3000
-  #  - They can communicate through the app-network
+  #  - Temp frontend runs on localhost:3001
+  #  - All services can communicate through the app-network
