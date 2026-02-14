@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node --version:*)",
+      "Bash(npm --version:*)",
+      "Bash(npm install:*)",
+      "Bash(npx vite build:*)",
+      "Bash(timeout 5 npx vite:*)",
+      "Bash(./mvnw compile:*)",
+      "Bash(mvn compile:*)",
+      "Bash(npx vue-tsc:*)",
+      "WebSearch",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "Bash(curl:*)",
+      "Bash(node -e:*)",
+      "Bash(ls:*)",
+      "WebFetch(domain:docs.readyplayer.me)",
+      "WebFetch(domain:www.opensourceavatars.com)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(xxd:*)",
+      "Bash(find:*)",
+      "Bash(npm uninstall:*)"
+    ]
+  }
+}
