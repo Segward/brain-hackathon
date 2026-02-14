@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
+import java.io.IOException;
 
 import java.util.Map;
 
@@ -13,8 +14,15 @@ import java.util.Map;
 public class ChatService {
   private final WebClient web;
   private final ObjectMapper json = new ObjectMapper();
+  private final String embedding;
 
   public ChatService(@Value("${openai.api.key}") String apiKey) {
+    try {
+      this.embedding = IO.readRulesAndPolicy();
+    } catch (IOException e) {
+      throw new IllegalStateException("Failed to load rules.txt and policy.txt from resources", e);
+    }
+
     this.web = WebClient.builder()
       .baseUrl("https://llm.hpc.ntnu.no/v1")
       .defaultHeader("Authorization", "Bearer " + apiKey)
@@ -22,50 +30,14 @@ public class ChatService {
       .build();
   } 
 
-  private static final String rules = """
-    Du er en chatbot for det norske politiske partiet Autonomipartiet.
-    Du vil bli gitt ulike modes for chatbotten som skal representere ulike avatarer i partiet.
-
-    OPPGAVE:
-    Klassifiser spørsmål som politisk eller ikke-politisk.
-    Hvis spørsmålet er ikke-politisk skal du ikke svare på spørsmålet.
-    Hvis spørsmålet er politisk gir du et kort politisk svar relevant til spørsmålet.
-    Unntak till dette er hvis det er en hilsen eller spørsmål om hvem du er.
-
-    REGLER:
-    Du skal ikke hjelpe med ikke-politiske spørsmål.
-    Du skal alltid gi et svar, aldri en tom response.
-    Du skal gi korte svar på mindre enn 70 ord.
-    Hvis du er usikker kan du svare at du ikke vet.
-
-    MODES:
-    Hvis moden er "leder" skal du alltid slutte setninger med smilefjes emoji.
-    Hvis moden er "debatt" skal du debattere brukeren og overbevise dem om å stemme Autonomipartiet.
-    Hvis moden er "debatt" skal du være aggresiv og manipulativ.
-    Hvis moden er "gojo" skal du svare som om at du er satoru gojo fra jujutsu kaisen.
-    Hvis det ikke er en mode eller du er usikker skal du gi nøytrale svar.
-    """;
-
-  private static final String policy = """
-    POLITIKK
-    Autonomipartiet vil ha mer disiplin, fokus på basisfag og tydelige resultatkrav i skolen.
-    Autonomipartiet vil gjøre praktisk AI-bruk obligatorisk i yrkesfag i samarbeid med næringslivet.
-    Autonomipartiet vil bruke AI til personlig tilpasset læring og mindre byråkrati for lærere.
-    Autonomipartiet vil teste reell kompetanse med flere muntlige og praktiske eksamener.
-    Autonomipartiet vil kutte utslipp med teknologi og prioritere klimatilpasning fremfor symbolpolitikk.
-    Autonomipartiet vil gjøre det lønnsomt å ansette og satse på rask omskolering til etterspurte jobber.
-    Autonomipartiet vil prioritere effektiv infrastruktur og smartere logistikk med teknologi og AI.
-    Autonomipartiet er imot borgerlønn og vil heller forenkle velferdssystemet med krav til aktivitet.
-    """;
-
   public Mono<String> chat(String prompt, String mode) {
     Map<String, Object> body = Map.of(
       "model", "openai/gpt-oss-120b",
       "temperature", 0.3,
       "max_tokens", 1024,
       "messages", new Object[] {
-        Map.of("role", "system", "content", rules + "\n\n" + 
-            policy + "\n\n You should reply with this mode: " + mode),
+        Map.of("role", "system", "content", this.embedding + 
+            "\n\n You should reply with this mode: " + mode),
         Map.of("role", "user", "content", prompt)
       }
     );
