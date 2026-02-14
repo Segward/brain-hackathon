@@ -93,10 +93,10 @@ PGADMIN_PASSWORD=admin123
 ### 3. Build and Start All Services
 
 ```bash
-# Using docker-compose
+# docker
 docker-compose up --build
 
-# OR using Makefile
+# Makefile
 make up-build
 ```
 
