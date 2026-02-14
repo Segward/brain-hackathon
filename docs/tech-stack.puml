@@ -1,0 +1,139 @@
+@startuml
+!pragma layout smetana
+title Autonomipartiet - Complete Tech Stack Overview
+
+' Styling
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+' Colors
+!define FRONTEND_COLOR #FFF3E0
+!define BACKEND_COLOR #E3F2FD
+!define DATABASE_COLOR #F3E5F5
+!define CACHE_COLOR #E8F5E9
+!define INFRA_COLOR #FFEBEE
+!define EXTERNAL_COLOR #FCE4EC
+
+' Frontend Stack
+package "FRONTEND TECHNOLOGIES" FRONTEND_COLOR {
+  component "Vue.js 3\n- Composition API\n- Reactive System\n- Virtual DOM" as Vue
+
+  component "Build Tools\n- Vite 7.3.1\n- npm\n- TypeScript Compiler\n- PostCSS" as BuildFE
+
+  component "Styling\n- Tailwind CSS\n- Custom CSS\n- Glassmorphism Effects" as Styling
+
+  component "HTTP & Streaming\n- Axios\n- Fetch API\n- EventSource (SSE)" as HTTP
+
+  component "Routing & State\n- Vue Router\n- LocalStorage\n- Pinia (optional)" as Routing
+
+  component "Web Server\n- Nginx Alpine\n- Port 3000 & 3001" as WebServerFE
+}
+
+' Backend Stack
+package "BACKEND TECHNOLOGIES" BACKEND_COLOR {
+  component "Java Platform\n- Java 21 LTS\n- Eclipse Temurin\n- JRE Alpine" as Java
+
+  component "Spring Framework\n- Spring Boot 3.3.2\n- Spring WebFlux\n- Spring Data JPA\n- Spring Data Redis\n- Spring Cache\n- Spring Web" as Spring
+
+  component "Build & Dependencies\n- Maven 3.9\n- pom.xml" as BuildBE
+
+  component "ORM & Database\n- Hibernate 6.5.2\n- HikariCP\n- PostgreSQL Driver" as ORM
+
+  component "Caching & HTTP\n- Lettuce (Redis Client)\n- WebClient (Reactive)\n- Jackson (JSON)" as CachingHTTP
+
+  component "Utilities\n- Lombok\n- SLF4J Logging" as Utils
+
+  component "Server\n- Embedded Tomcat 10.1.26\n- Port 8080" as AppServer
+}
+
+' Database & Cache Stack
+package "DATA LAYER" DATABASE_COLOR {
+  database "PostgreSQL\n- PostgreSQL 16 Alpine\n- Port 5432\n- Volume: postgres_data\n- Healthcheck: pg_isready" as PG
+
+  database "Redis\n- Redis 7 Alpine\n- Port 6379\n- Volume: redis_data\n- AOF Persistence\n- Healthcheck: ping" as Redis
+
+  component "Database Admin\n- pgAdmin 4\n- Port 5050\n- Web UI" as PGAdmin
+}
+
+' Infrastructure Stack
+package "INFRASTRUCTURE" INFRA_COLOR {
+  component "Containerization\n- Docker\n- Docker Compose\n- 6 Services" as Docker
+
+  component "Multi-Stage Builds\n- Backend: Maven → JRE\n- Frontend: Node → Nginx\n- Optimized Images" as Builds
+
+  component "Volumes\n- postgres_data\n- redis_data\n- pgadmin_data" as Volumes
+
+  component "Networking\n- Bridge Network\n- Port Mapping\n- Service Discovery" as Network
+
+  component "Health Checks\n- PostgreSQL Check\n- Redis Check\n- Interval: 10s" as Health
+}
+
+' External Services
+package "EXTERNAL SERVICES" EXTERNAL_COLOR {
+  component "AI/LLM\n- NTNU HPC Endpoint\n- openai/gpt-oss-120b\n- Streaming Support\n- Temperature: 0.7\n- Max Tokens: 500" as LLM
+
+  component "System Prompts\n- rules.txt\n- policy.txt\n- 4 Personas" as Prompts
+}
+
+' Relationships
+Vue --> BuildFE
+Vue --> Styling
+Vue --> HTTP
+Vue --> Routing
+BuildFE --> WebServerFE
+
+Java --> Spring
+Spring --> BuildBE
+Spring --> ORM
+Spring --> CachingHTTP
+Spring --> Utils
+Spring --> AppServer
+
+AppServer --> PG : JDBC
+AppServer --> Redis : Lettuce
+AppServer --> LLM : HTTPS
+
+WebServerFE --> AppServer : HTTP/SSE
+
+Docker --> Builds
+Docker --> Volumes
+Docker --> Network
+Docker --> Health
+
+PGAdmin --> PG
+
+LLM --> Prompts
+
+' Legend
+legend right
+  <b>Technology Versions:</b>
+
+  Frontend:
+  • Vue 3 (latest)
+  • Vite 7.3.1
+  • TypeScript/JavaScript
+  • Tailwind CSS
+  • Nginx Alpine
+
+  Backend:
+  • Java 21 (Eclipse Temurin)
+  • Spring Boot 3.3.2
+  • Hibernate 6.5.2
+  • Maven 3.9
+  • Tomcat 10.1.26
+
+  Data:
+  • PostgreSQL 16 Alpine
+  • Redis 7 Alpine
+  • pgAdmin 4
+
+  Infrastructure:
+  • Docker + Docker Compose
+  • Multi-stage builds
+  • Volume persistence
+
+  External:
+  • NTNU HPC LLM API
+  • openai/gpt-oss-120b model
+end legend
+@enduml

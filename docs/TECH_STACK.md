@@ -275,55 +275,55 @@ Complete technical architecture diagram for the Brain Hackathon project.
 
 ### **Frontend Technologies**
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Vue.js | 3.x | Progressive JavaScript framework |
-| TypeScript | Latest | Type-safe JavaScript (main frontend) |
-| Vite | 7.3.1 | Fast build tool and dev server |
-| Tailwind CSS | Latest | Utility-first CSS framework |
-| Vue Router | Latest | Client-side routing |
-| Axios | Latest | HTTP client |
-| Nginx | Alpine | Production web server |
+| Technology   | Version | Purpose                              |
+| ------------ | ------- | ------------------------------------ |
+| Vue.js       | 3.x     | Progressive JavaScript framework     |
+| TypeScript   | Latest  | Type-safe JavaScript (main frontend) |
+| Vite         | 7.3.1   | Fast build tool and dev server       |
+| Tailwind CSS | Latest  | Utility-first CSS framework          |
+| Vue Router   | Latest  | Client-side routing                  |
+| Axios        | Latest  | HTTP client                          |
+| Nginx        | Alpine  | Production web server                |
 
 ### **Backend Technologies**
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Java | 21 (LTS) | Programming language |
-| Spring Boot | 3.3.2 | Application framework |
-| Spring WebFlux | 3.3.2 | Reactive web framework |
-| Spring Data JPA | 3.3.2 | Database abstraction |
-| Spring Data Redis | 3.3.2 | Redis integration |
-| Spring Cache | 3.3.2 | Caching abstraction |
-| Hibernate | 6.5.2 | ORM framework |
-| Maven | 3.9 | Build tool & dependency management |
-| HikariCP | Auto | JDBC connection pool |
-| Lombok | Latest | Reduce boilerplate code |
-| Jackson | Auto | JSON serialization |
+| Technology        | Version  | Purpose                            |
+| ----------------- | -------- | ---------------------------------- |
+| Java              | 21 (LTS) | Programming language               |
+| Spring Boot       | 3.3.2    | Application framework              |
+| Spring WebFlux    | 3.3.2    | Reactive web framework             |
+| Spring Data JPA   | 3.3.2    | Database abstraction               |
+| Spring Data Redis | 3.3.2    | Redis integration                  |
+| Spring Cache      | 3.3.2    | Caching abstraction                |
+| Hibernate         | 6.5.2    | ORM framework                      |
+| Maven             | 3.9      | Build tool & dependency management |
+| HikariCP          | Auto     | JDBC connection pool               |
+| Lombok            | Latest   | Reduce boilerplate code            |
+| Jackson           | Auto     | JSON serialization                 |
 
 ### **Database & Cache**
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| PostgreSQL | 16-alpine | Primary database |
-| Redis | 7-alpine | Response caching |
-| pgAdmin | 4 (latest) | Database administration |
+| Technology | Version    | Purpose                 |
+| ---------- | ---------- | ----------------------- |
+| PostgreSQL | 16-alpine  | Primary database        |
+| Redis      | 7-alpine   | Response caching        |
+| pgAdmin    | 4 (latest) | Database administration |
 
 ### **Infrastructure**
 
-| Technology | Version | Purpose |
-|------------|---------|---------|
-| Docker | Latest | Containerization |
-| Docker Compose | Latest | Multi-container orchestration |
-| Eclipse Temurin | 21 | Java runtime (JRE) |
-| Node.js | 20-alpine | JavaScript runtime (build) |
+| Technology      | Version   | Purpose                       |
+| --------------- | --------- | ----------------------------- |
+| Docker          | Latest    | Containerization              |
+| Docker Compose  | Latest    | Multi-container orchestration |
+| Eclipse Temurin | 21        | Java runtime (JRE)            |
+| Node.js         | 20-alpine | JavaScript runtime (build)    |
 
 ### **External Services**
 
-| Service | Purpose |
-|---------|---------|
-| NTNU HPC LLM | AI language model endpoint |
-| openai/gpt-oss-120b | Specific LLM model |
+| Service             | Purpose                    |
+| ------------------- | -------------------------- |
+| NTNU HPC LLM        | AI language model endpoint |
+| openai/gpt-oss-120b | Specific LLM model         |
 
 ---
 
@@ -415,14 +415,14 @@ Complete technical architecture diagram for the Brain Hackathon project.
 
 ## 📊 Port Mappings
 
-| Service | Container Port | Host Port | Protocol |
-|---------|---------------|-----------|----------|
-| Backend | 8080 | 8080 | HTTP |
-| Frontend | 80 | 3000 | HTTP |
-| Temp Frontend | 80 | 3001 | HTTP |
-| PostgreSQL | 5432 | 5432 | PostgreSQL |
-| Redis | 6379 | 6379 | Redis |
-| pgAdmin | 80 | 5050 | HTTP |
+| Service       | Container Port | Host Port | Protocol   |
+| ------------- | -------------- | --------- | ---------- |
+| Backend       | 8080           | 8080      | HTTP       |
+| Frontend      | 80             | 3000      | HTTP       |
+| Temp Frontend | 80             | 3001      | HTTP       |
+| PostgreSQL    | 5432           | 5432      | PostgreSQL |
+| Redis         | 6379           | 6379      | Redis      |
+| pgAdmin       | 80             | 5050      | HTTP       |
 
 ---
 
@@ -436,6 +436,7 @@ Complete technical architecture diagram for the Brain Hackathon project.
 - Redis protected mode
 
 **⚠️ Note:** This is a demo/hackathon project. Production deployment would need:
+
 - Rate limiting
 - Authentication/Authorization
 - Input validation/sanitization
@@ -449,6 +450,7 @@ Complete technical architecture diagram for the Brain Hackathon project.
 ## 🎨 Frontend Architecture
 
 ### **Main Frontend (TypeScript)**
+
 - Component-based architecture
 - Tailwind CSS utility classes
 - Vue Router for navigation
@@ -457,6 +459,7 @@ Complete technical architecture diagram for the Brain Hackathon project.
 - LocalStorage for chat persistence
 
 ### **Temp Frontend (JavaScript)**
+
 - Simpler, vanilla Vue 3
 - Custom CSS with glassmorphism effects
 - Fetch API for HTTP requests
@@ -516,6 +519,7 @@ brain-hackathon/
 ## 🚀 Build & Deploy Process
 
 ### **Backend Build**
+
 ```dockerfile
 # Stage 1: Maven build
 FROM maven:3.9-eclipse-temurin-21
@@ -534,6 +538,7 @@ CMD ["java", "-jar", "app.jar"]
 ```
 
 ### **Frontend Build**
+
 ```dockerfile
 # Stage 1: Node build
 FROM node:20-alpine
@@ -556,6 +561,7 @@ CMD ["nginx", "-g", "daemon off;"]
 ## 📈 Metrics & Monitoring
 
 ### **Current Statistics**
+
 - Total conversations: 13
 - Average response time: 1117ms
 - Cache hit rate: High (5 keys cached)
@@ -563,6 +569,7 @@ CMD ["nginx", "-g", "daemon off;"]
 - Database save time: < 50ms
 
 ### **Monitoring Tools Available**
+
 - Docker logs
 - pgAdmin (database queries)
 - Backend API endpoints (stats, cache info)

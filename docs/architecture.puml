@@ -1,0 +1,164 @@
+@startuml autonomipartiet-architecture
+!pragma layout smetana
+!define BACKEND_COLOR #E1F5FE
+!define FRONTEND_COLOR #FFF3E0
+!define DATABASE_COLOR #F3E5F5
+!define CACHE_COLOR #E8F5E9
+!define EXTERNAL_COLOR #FFEBEE
+
+title Autonomipartiet - System Architecture
+
+skinparam componentStyle rectangle
+skinparam packageStyle rectangle
+
+' Frontend Layer
+package "Frontend Layer" <<Cloud>> FRONTEND_COLOR {
+  component "Main Frontend\n(Vue 3 + TypeScript)\n:3000\n- Vue Router\n- Tailwind CSS\n- Axios\n- EventSource (SSE)\n- LocalStorage" as MainFE
+
+  component "Temp Frontend\n(Vue 3 + JavaScript)\n:3001\n- Vue Router (Temp)\n- Custom CSS\n- Fetch API\n- EventSource (SSE)\n- LocalStorage (Temp)" as TempFE
+}
+
+' Application Layer
+package "Application Layer" <<Node>> BACKEND_COLOR {
+  component "Spring Boot Backend\n:8080" as Backend
+
+  package "Controllers" {
+    component "ChatController\nGET /api/chat" as ChatCtrl
+    component "StreamingChatController\nGET /api/chat/stream" as StreamCtrl
+    component "HistoryController\nGET /api/history" as HistoryCtrl
+    component "CacheController\nGET /api/cache/stats" as CacheCtrl
+  }
+
+  package "Services" {
+    component "ChatService\n@Cacheable" as ChatSvc
+    component "LLM Integration" as LLM
+  }
+
+  package "Repositories" {
+    component "ConversationRepository\nJPA" as ConvRepo
+  }
+
+  package "Spring Modules" {
+    component "Spring WebFlux\nReactive" as WebFlux
+    component "Spring Data JPA" as JPA
+    component "Spring Data Redis" as SpringRedis
+    component "Spring Cache" as Cache
+  }
+}
+
+' Data Layer
+package "Data Layer" <<Database>> DATABASE_COLOR {
+  database "PostgreSQL 16\n:5432" as PG
+  component "conversation table\n- id\n- user_message\n- assistant_response\n- mode\n- timestamp\n- session_id\n- response_time_ms" as ConvTable
+
+  component "pgAdmin 4\n:5050" as PGAdmin
+}
+
+' Cache Layer
+package "Cache Layer" CACHE_COLOR {
+  database "Redis 7\n:6379" as RedisDB
+  component "Cache Keys\nchatResponses::{msg}_{mode}" as CacheKeys
+  component "TTL: 10 minutes" as TTL
+  component "AOF Persistence" as AOF
+}
+
+' External Services
+package "External Services" <<Cloud>> EXTERNAL_COLOR {
+  component "NTNU HPC LLM\n- openai/gpt-oss-120b\n- Stream: true/false\n- Temperature: 0.7\n- Max Tokens: 500" as NTNU
+}
+
+' System Resources
+package "System Prompts" {
+  file "rules.txt" as Rules
+  file "policy.txt" as Policy
+}
+
+' Connections - Frontend to Backend
+MainFE -down-> Backend : HTTP/SSE
+TempFE -down-> Backend : HTTP/SSE
+
+' Backend internal wiring
+Backend -down-> ChatCtrl
+Backend -down-> StreamCtrl
+Backend -down-> HistoryCtrl
+Backend -down-> CacheCtrl
+
+ChatCtrl -down-> ChatSvc
+StreamCtrl -down-> ChatSvc
+HistoryCtrl -down-> ConvRepo
+CacheCtrl -down-> SpringRedis
+
+ChatSvc -down-> Cache : @Cacheable
+ChatSvc -right-> LLM
+ChatSvc -down-> ConvRepo : Save conversation
+
+' Modules to infra
+Cache -down-> RedisDB : Cache read/write
+SpringRedis -down-> RedisDB : Redis client
+JPA -down-> PG : JDBC
+ConvRepo -up-> JPA
+
+PG -down-> ConvTable
+
+' External
+LLM -right-> NTNU : HTTPS API Call
+LLM -up-> Rules : Load system prompt
+LLM -up-> Policy : Load party policies
+
+' Admin
+PGAdmin -right-> PG : Database queries
+
+' Notes
+note right of MainFE
+  **Technologies:**
+  • Vite 7.3.1
+  • Vue 3
+  • TypeScript
+  • Tailwind CSS
+end note
+
+note right of TempFE
+  **Technologies:**
+  • Vite 7.3.1
+  • Vue 3
+  • JavaScript
+  • Custom CSS
+  • Glassmorphism
+end note
+
+note left of Backend
+  **Technologies:**
+  • Java 21
+  • Spring Boot 3.3.2
+  • Spring WebFlux
+  • Maven 3.9
+  • Hibernate 6.5.2
+  • HikariCP
+  • Lombok
+end note
+
+note bottom of PG
+  **Stats:**
+  • 13 conversations
+  • Avg save: <50ms
+  • Volume: postgres_data
+end note
+
+note bottom of RedisDB
+  **Stats:**
+  • 5 cached keys
+  • Hit time: instant
+  • Volume: redis_data
+end note
+
+note right of NTNU
+  **Endpoint:**
+  https://llm.hpc.ntnu.no/v1
+
+  **Modes:**
+  • leder (diplomatic)
+  • debatt (aggressive)
+  • tech (technical)
+  • education (pedagogical)
+end note
+@enduml

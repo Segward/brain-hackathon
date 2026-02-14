@@ -1,0 +1,84 @@
+@startuml autonomipartiet-simple-overview
+!pragma layout smetana
+
+title Autonomipartiet - Simple Architecture Overview
+
+' User
+actor "User" as User
+
+' Frontend
+rectangle "Frontend Layer" #LightBlue {
+    component "Main Frontend\n(Vue 3 TS)\nPort 3000" as Frontend1
+    component "Temp Frontend\n(Vue 3 JS)\nPort 3001" as Frontend2
+}
+
+' Backend
+rectangle "Application Layer" #LightGreen {
+    component "Spring Boot Backend\nPort 8080" as Backend {
+        [Chat API]
+        [History API]
+        [Cache API]
+    }
+}
+
+' Data Layer
+rectangle "Data Layer" #LightPink {
+    database "PostgreSQL\nPort 5432" as DB
+    database "Redis\nPort 6379" as Cache
+    component "pgAdmin\nPort 5050" as Admin
+}
+
+' External
+cloud "NTNU HPC\nLLM API" as LLM #LightYellow
+
+' Infrastructure
+rectangle "Docker Infrastructure" #LightGray {
+    [Docker Compose]
+    [6 Containers]
+    [3 Volumes]
+}
+
+' Connections
+User --> Frontend1 : Browse
+User --> Frontend2 : Browse
+User --> Admin : Manage DB
+
+Frontend1 --> Backend : HTTP/SSE
+Frontend2 --> Backend : HTTP/SSE
+
+Backend --> DB : Store conversations
+Backend --> Cache : Cache responses\n(10 min TTL)
+Backend --> LLM : Get AI responses
+
+Admin --> DB : Query
+
+[Docker Compose] .down.> Frontend1 : manages
+[Docker Compose] .down.> Frontend2 : manages
+[Docker Compose] .down.> Backend : manages
+[Docker Compose] .down.> DB : manages
+[Docker Compose] .down.> Cache : manages
+[Docker Compose] .down.> Admin : manages
+
+note right of Backend
+  **4 AI Personas:**
+  • leder (diplomatic)
+  • debatt (aggressive)
+  • tech (technical)
+  • education (pedagogical)
+end note
+
+note right of Cache
+  **Performance:**
+  • First request: ~1117ms
+  • Cached request: ~50ms
+  • 5 keys currently cached
+end note
+
+note right of DB
+  **Persistence:**
+  • 13 conversations stored
+  • Save time: <50ms
+  • Full history retained
+end note
+
+@enduml

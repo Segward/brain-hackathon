@@ -1,0 +1,144 @@
+@startuml autonomipartiet-sequence
+!pragma layout smetana
+!define USER_COLOR #FFE0B2
+!define FRONTEND_COLOR #BBDEFB
+!define BACKEND_COLOR #C8E6C9
+!define CACHE_COLOR #FFF9C4
+!define DB_COLOR #F8BBD0
+!define LLM_COLOR #E1BEE7
+
+title Autonomipartiet - Chat Request Flow (SSE Streaming)
+
+actor User USER_COLOR
+participant "Frontend\n(Vue 3)" as Frontend FRONTEND_COLOR
+participant "Backend\n(Spring Boot)" as Backend BACKEND_COLOR
+participant "Cache\n(Redis)" as Cache CACHE_COLOR
+participant "Database\n(PostgreSQL)" as DB DB_COLOR
+participant "LLM\n(NTNU HPC)" as LLM LLM_COLOR
+
+== User Asks Question ==
+
+User -> Frontend : Type message\n"Hva er partiets standpunkt?"
+activate Frontend
+
+Frontend -> Frontend : Select mode (leder, debatt, etc)
+Frontend -> Frontend : Create EventSource for SSE
+
+Frontend -> Backend : GET /api/chat/stream\n?message=...&mode=leder
+activate Backend
+
+== Cache Check ==
+
+Backend -> Cache : Check cache key:\nchatResponses::Hva er...._leder
+activate Cache
+
+alt Cache Hit (Instant Response)
+  Cache --> Backend : Cached response found
+  deactivate Cache
+
+  Backend -> Frontend : stream: data:Cached response...
+  Backend -> Frontend : stream: data:[DONE]
+  deactivate Backend
+
+  Frontend -> Frontend : Display response word-by-word
+  Frontend -> User : Show complete answer
+  deactivate Frontend
+
+else Cache Miss (LLM Call Needed)
+  Cache --> Backend : No cache found
+  deactivate Cache
+
+  == Load System Prompts ==
+
+  Backend -> Backend : Load rules.txt
+  Backend -> Backend : Load policy.txt
+  Backend -> Backend : Combine system prompts
+
+  == Call LLM API ==
+
+  Backend -> LLM : POST /v1/chat/completions\n{\n  model: "openai/gpt-oss-120b",\n  messages: [system, user],\n  stream: true,\n  temperature: 0.7,\n  max_tokens: 500\n}
+  activate LLM
+
+  == Stream Response ==
+
+  loop For each word/token
+    LLM --> Backend : SSE chunk: "Autonomipartiet "
+    Backend --> Frontend : stream: data:Autonomipartiet
+    Frontend -> Frontend : Append to message
+    Frontend -> User : Display word
+
+    LLM --> Backend : SSE chunk: "vil "
+    Backend --> Frontend : stream: data:vil
+    Frontend -> Frontend : Append to message
+    Frontend -> User : Display word
+
+    note over LLM, Frontend
+      Streaming continues...
+      ~50ms per word
+      Total: ~1117ms average
+    end note
+  end
+
+  LLM --> Backend : Stream complete
+  deactivate LLM
+
+  Backend -> Backend : Combine full response
+
+  == Save to Cache ==
+
+  Backend -> Cache : SET chatResponses::...\nTTL: 10 minutes
+  activate Cache
+  Cache --> Backend : OK
+  deactivate Cache
+
+  == Save to Database ==
+
+  Backend -> DB : INSERT INTO conversation\n(user_message, assistant_response,\n mode, timestamp, response_time_ms)
+  activate DB
+  DB --> Backend : OK (< 50ms)
+  deactivate DB
+
+  == Complete Stream ==
+
+  Backend -> Frontend : stream: data:[DONE]
+  deactivate Backend
+
+  Frontend -> Frontend : Close EventSource
+  Frontend -> Frontend : Save to LocalStorage
+  Frontend -> User : Show complete answer
+  deactivate Frontend
+end
+
+== User Asks Same Question Again ==
+
+User -> Frontend : Same question again
+activate Frontend
+
+Frontend -> Backend : GET /api/chat/stream\n?message=...&mode=leder
+activate Backend
+
+Backend -> Cache : Check cache key
+activate Cache
+Cache --> Backend : ✅ Cached response found!
+deactivate Cache
+
+Backend -> Frontend : stream: data:[full cached response]
+Backend -> Frontend : stream: data:[DONE]
+deactivate Backend
+
+Frontend -> User : ⚡ Instant response!
+deactivate Frontend
+
+note over User, LLM
+  **Performance Comparison:**
+
+  First request (LLM call):
+  • Response time: ~1117ms
+  • Database save: <50ms
+
+  Cached request:
+  • Response time: ~50ms (near instant!)
+  • No LLM call
+  • No database write (already saved)
+end note
+@enduml

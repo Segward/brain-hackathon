@@ -1,0 +1,145 @@
+@startuml autonomipartiet-deployment
+!pragma layout smetana
+
+!define DOCKER_BLUE #2496ED
+!define APP_COLOR #4CAF50
+!define DB_COLOR #9C27B0
+!define CACHE_COLOR #FF9800
+
+title Autonomipartiet - Docker Deployment Diagram
+
+skinparam componentStyle rectangle
+
+' Docker Host
+node "Docker Host" {
+    
+    ' Docker Network
+    cloud "Docker Network (bridge)" as Network {
+        
+        ' Frontend Containers
+        component "frontend\n(Nginx Alpine)" as Frontend #DOCKER_BLUE {
+            [Vue 3 App\nTypeScript] as FrontendApp
+            port "3000" as FrontendPort
+        }
+        
+        component "temp-frontend\n(Nginx Alpine)" as TempFrontend #DOCKER_BLUE {
+            [Vue 3 App\nJavaScript] as TempApp
+            port "3001" as TempPort
+        }
+        
+        ' Backend Container
+        component "backend\n(JRE 21 Alpine)" as Backend #DOCKER_BLUE {
+            [Spring Boot\nApplication] as SpringApp
+            port "8080" as BackendPort
+        }
+        
+        ' Database Container
+        component "postgres\n(PostgreSQL 16 Alpine)" as Postgres #DOCKER_BLUE {
+            [PostgreSQL\nServer] as PGServer
+            port "5432" as PGPort
+        }
+        
+        ' Cache Container
+        component "redis\n(Redis 7 Alpine)" as Redis #DOCKER_BLUE {
+            [Redis\nServer] as RedisServer
+            port "6379" as RedisPort
+        }
+        
+        ' Admin Container
+        component "pgadmin\n(pgAdmin 4)" as PGAdmin #DOCKER_BLUE {
+            [pgAdmin\nWeb UI] as PGAdminUI
+            port "5050" as PGAdminPort
+        }
+    }
+    
+    ' Docker Volumes
+    storage "postgres_data\n(Volume)" as PGVolume #DB_COLOR
+    storage "redis_data\n(Volume)" as RedisVolume #CACHE_COLOR
+    storage "pgadmin_data\n(Volume)" as PGAdminVolume #APP_COLOR
+}
+
+' External connections
+actor "User" as User
+cloud "NTNU HPC" as NTNU
+
+' User connections
+User --> FrontendPort : "http://localhost:3000"
+User --> TempPort : "http://localhost:3001"
+User --> PGAdminPort : "http://localhost:5050"
+
+' Frontend to Backend
+FrontendApp --> BackendPort : "HTTP/SSE"
+TempApp --> BackendPort : "HTTP/SSE"
+
+' Backend to Services
+SpringApp --> PGPort : "JDBC"
+SpringApp --> RedisPort : "Lettuce Client"
+SpringApp --> NTNU : "HTTPS API"
+
+' Admin to Database
+PGAdminUI --> PGPort : "PostgreSQL Protocol"
+
+' Volume mounts
+Postgres --> PGVolume : "Mount /var/lib/postgresql/data"
+Redis --> RedisVolume : "Mount /data"
+PGAdmin --> PGAdminVolume : "Mount /var/lib/pgadmin"
+
+note right of Frontend
+  **Build:**
+  Multi-stage Dockerfile
+  1. Node 20 Alpine (build)
+  2. Nginx Alpine (serve)
+  
+  **Healthcheck:** None
+end note
+
+note right of Backend
+  **Build:**
+  Multi-stage Dockerfile
+  1. Maven 3.9 + JDK 21 (build)
+  2. JRE 21 Alpine (runtime)
+  
+  **Depends on:**
+  - postgres
+  - redis
+  
+  **Healthcheck:** None
+end note
+
+note right of Postgres
+  **Image:** postgres:16-alpine
+  
+  **Environment:**
+  - POSTGRES_DB=autonomi
+  - POSTGRES_USER=admin
+  - POSTGRES_PASSWORD=***
+  
+  **Healthcheck:**
+  pg_isready -U admin
+  (interval: 10s, timeout: 5s)
+end note
+
+note right of Redis
+  **Image:** redis:7-alpine
+  
+  **Command:**
+  redis-server --appendonly yes
+  
+  **Healthcheck:**
+  redis-cli ping
+  (interval: 10s, timeout: 5s)
+end note
+
+note bottom of PGVolume
+  **Persistence:**
+  All conversation history
+  survives container restarts
+end note
+
+note bottom of RedisVolume
+  **Persistence:**
+  AOF (Append-Only File)
+  Cache survives restarts
+end note
+
+@enduml

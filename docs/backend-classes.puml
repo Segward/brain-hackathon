@@ -1,0 +1,234 @@
+@startuml autonomipartiet-backend-classes
+!pragma layout smetana
+
+!define ENTITY_COLOR #E3F2FD
+!define REPOSITORY_COLOR #F3E5F5
+!define SERVICE_COLOR #E8F5E9
+!define CONTROLLER_COLOR #FFF3E0
+!define CONFIG_COLOR #FCE4EC
+!define DTO_COLOR #F1F8E9
+
+title Autonomipartiet - Backend Class Diagram
+
+package "Entity Layer" <<Database>> #ENTITY_COLOR {
+    class Conversation {
+        - Long id
+        - String userMessage
+        - String assistantResponse
+        - String mode
+        - LocalDateTime timestamp
+        - String sessionId
+        - Long responseTimeMs
+        --
+        + getId() : Long
+        + getUserMessage() : String
+        + getAssistantResponse() : String
+        + getMode() : String
+        + getTimestamp() : LocalDateTime
+        + getResponseTimeMs() : Long
+    }
+    
+    note right of Conversation
+      **JPA Entity**
+      @Entity
+      @Table(name = "conversation")
+      
+      Auto-generated ID
+      Auto-timestamp on creation
+    end note
+}
+
+package "DTO Layer" <<Rectangle>> #DTO_COLOR {
+    class ConversationDTO {
+        - Long id
+        - String userMessage
+        - String assistantResponse
+        - String mode
+        - LocalDateTime timestamp
+        - Long responseTimeMs
+        --
+        + ConversationDTO(...)
+    }
+    
+    note right of ConversationDTO
+      **Data Transfer Object**
+      Record pattern
+      Immutable
+      Used for API responses
+    end note
+}
+
+package "Repository Layer" <<Database>> #REPOSITORY_COLOR {
+    interface ConversationRepository {
+        + findTop50ByOrderByTimestampDesc() : List<Conversation>
+        + findByModeOrderByTimestampDesc(String) : List<Conversation>
+        + getTotalConversations() : Long
+        + getAverageResponseTime() : Double
+        + countByMode(String) : Long
+    }
+    
+    note right of ConversationRepository
+      **Spring Data JPA**
+      @Repository
+      
+      Extends JpaRepository
+      Custom query methods
+      @Query annotations
+    end note
+}
+
+package "Service Layer" <<Node>> #SERVICE_COLOR {
+    class ChatService {
+        - WebClient webClient
+        - ConversationRepository repository
+        - String apiUrl
+        - String apiKey
+        - String rulesAndPolicy
+        --
+        + chat(String, String) : Mono<String>
+        + chatStream(String, String) : Flux<String>
+        + saveConversation(String, String, String, long) : void
+        - buildRequestBody(String, String) : Map
+        - extractContent(JsonNode) : String
+    }
+    
+    class IO {
+        {static} + readRulesAndPolicy() : String
+    }
+    
+    note right of ChatService
+      **Core Business Logic**
+      @Service
+      
+      **Features:**
+      • @Cacheable on chat()
+      • WebFlux reactive
+      • LLM API integration
+      • Auto-save to database
+      • Stream support
+    end note
+    
+    note right of IO
+      **Utility Class**
+      
+      Loads:
+      • rules.txt
+      • policy.txt
+      
+      Combines into system prompt
+    end note
+}
+
+package "Controller Layer" <<Rectangle>> #CONTROLLER_COLOR {
+    class ChatController {
+        - ChatService chatService
+        --
+        + chat(String, String) : Mono<String>
+    }
+    
+    class StreamingChatController {
+        - ChatService chatService
+        --
+        + chatStream(String, String) : Flux<ServerSentEvent<String>>
+    }
+    
+    class HistoryController {
+        - ConversationRepository repository
+        --
+        + getRecentHistory(int) : List<ConversationDTO>
+        + getHistoryByMode(String) : List<ConversationDTO>
+        + getStats() : Map<String, Object>
+        + clearHistory() : Map<String, String>
+        - toDTO(Conversation) : ConversationDTO
+    }
+    
+    class CacheController {
+        - CacheManager cacheManager
+        --
+        + getCacheStats() : Map<String, Object>
+        + clearCache() : Map<String, String>
+    }
+    
+    note right of ChatController
+      **REST Endpoint**
+      @RestController
+      @RequestMapping("/api/chat")
+      
+      GET /api/chat
+      Simple sync responses
+    end note
+    
+    note right of StreamingChatController
+      **SSE Streaming**
+      @RestController
+      @RequestMapping("/api/chat/stream")
+      
+      GET /api/chat/stream
+      Real-time word-by-word
+    end note
+}
+
+package "Configuration Layer" <<Rectangle>> #CONFIG_COLOR {
+    class CacheConfig {
+        --
+        + redisCacheManager(RedisConnectionFactory) : CacheManager
+        + redisTemplate(RedisConnectionFactory) : RedisTemplate
+    }
+    
+    class WebConfig {
+        --
+        + corsFilter() : CorsFilter
+    }
+    
+    note right of CacheConfig
+      **Spring Cache Config**
+      @Configuration
+      @EnableCaching
+      
+      • TTL: 10 minutes
+      • Key prefix: chatResponses::
+      • Serialization: String
+    end note
+}
+
+package "Main Application" {
+    class App {
+        {static} + main(String[]) : void
+    }
+    
+    note right of App
+      **Spring Boot Entry**
+      @SpringBootApplication
+      
+      Port: 8080
+      Profile: default
+    end note
+}
+
+' Relationships
+ChatController --> ChatService : uses
+StreamingChatController --> ChatService : uses
+HistoryController --> ConversationRepository : uses
+HistoryController --> ConversationDTO : creates
+CacheController ..> CacheConfig : configures
+
+ChatService --> ConversationRepository : saves to
+ChatService --> IO : loads prompts
+ChatService ..> Conversation : creates
+
+ConversationRepository --> Conversation : manages
+
+HistoryController ..> Conversation : reads
+HistoryController ..> ConversationDTO : converts
+
+' Spring Framework relationships
+ConversationRepository --|> JpaRepository : extends
+
+interface JpaRepository {
+    + save(T) : T
+    + findById(ID) : Optional<T>
+    + findAll() : List<T>
+    + deleteAll() : void
+}
+
+@enduml
