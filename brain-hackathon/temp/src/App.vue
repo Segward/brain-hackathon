@@ -1,397 +1,83 @@
 <template>
-  <div class="page">
-    <h1 class="title">Autonomipartiet</h1>
+  <div class="app">
+    <nav class="nav">
+      <router-link to="/">Home</router-link>
+      <router-link to="/program">Program</router-link>
+    </nav>
 
-    <div class="avatars">
-      <!-- LEDER -->
-      <button
-        class="card"
-        type="button"
-        @click="avatar = 0"
-        :class="{ activeLeader: avatar === 0 }"
-      >
-        <div class="face leader" :class="{ talking: speaking && avatar === 0 }">
-          <div class="eyes"><span class="eye"></span><span class="eye"></span></div>
-          <div class="brows"><span class="brow"></span><span class="brow"></span></div>
-          <div class="mouth"></div>
-        </div>
-
-        <div class="role">Leder</div>
-        <div v-if="avatar === 0" class="activeLabel leaderLabel">AKTIV MODUS</div>
-      </button>
-
-      <!-- DEBATT -->
-      <button
-        class="card"
-        type="button"
-        @click="avatar = 1"
-        :class="{ activeDebatt: avatar === 1 }"
-      >
-        <div class="face demon" :class="{ talking: speaking && avatar === 1 }">
-          <div class="horn hornL"></div>
-          <div class="horn hornR"></div>
-          <div class="eyes demonEyes"><span class="eye"></span><span class="eye"></span></div>
-          <div class="mouth demonMouth"></div>
-          <div class="evilGlow"></div>
-        </div>
-
-        <div class="role">Debatt</div>
-        <div v-if="avatar === 1" class="activeLabel debattLabel">AKTIV MODUS</div>
-      </button>
-    </div>
-
-    <form class="bar" @submit.prevent="send">
-      <input v-model="message" placeholder="Skriv en melding…" autocomplete="off" />
-      <button type="submit" :disabled="loading || !message.trim()">
-        {{ loading ? "..." : "Send" }}
-      </button>
-      <button type="button" @click="stop" :disabled="!speaking">Stopp</button>
-    </form>
-
-    <div class="answer">
-      <div class="answerTitle">Svar</div>
-      <div v-if="response" class="answerBody">{{ response }}</div>
-      <div v-else class="muted">Ingen svar ennå.</div>
-      <div v-if="error" class="error">{{ error }}</div>
-    </div>
+    <router-view />
   </div>
 </template>
 
-<script setup>
-import { onMounted, ref } from "vue";
+<style>
+/* ===== GLOBAL APP DARK THEME ===== */
 
-const message = ref("Hei!");
-const response = ref("");
-const error = ref("");
-const loading = ref(false);
-
-const speaking = ref(false);
-const avatar = ref(0);
-
-let norwegianVoice = null;
-
-function pickVoice() {
-  const list = window.speechSynthesis?.getVoices?.() || [];
-  norwegianVoice =
-    list.find((v) => v.lang === "nb-NO") ||
-    list.find((v) => v.lang === "no-NO") ||
-    list.find((v) => v.lang === "nn-NO") ||
-    list.find((v) => (v.lang || "").toLowerCase().startsWith("no")) ||
-    null;
-}
-
-function stop() {
-  try {
-    window.speechSynthesis?.cancel?.();
-  } catch {}
-  speaking.value = false;
-}
-
-function speak(text) {
-  if (!("speechSynthesis" in window)) return;
-
-  stop();
-
-  const u = new SpeechSynthesisUtterance(text);
-  u.lang = "nb-NO";
-  if (norwegianVoice) u.voice = norwegianVoice;
-
-  // Leder vs Debatt
-  if (avatar.value === 0) {
-    u.pitch = 1.0;
-    u.rate = 1.0;
-  } else {
-    // mørkere/roligere
-    u.pitch = 0.6;
-    u.rate = 0.92;
-  }
-
-  u.onstart = () => (speaking.value = true);
-  u.onend = () => (speaking.value = false);
-  u.onerror = () => (speaking.value = false);
-
-  window.speechSynthesis.speak(u);
-}
-
-async function send() {
-  error.value = "";
-  response.value = "";
-  loading.value = true;
-
-  const mode = avatar.value === 0 ? "leder" : "debatt";
-
-  try {
-    const res = await fetch(
-      `/api/chat?message=${encodeURIComponent(message.value)}&mode=${mode}`
-    );
-    const body = await res.text();
-    if (!res.ok) throw new Error(body || `HTTP ${res.status}`);
-
-    response.value = body;
-    speak(body);
-  } catch (e) {
-    error.value = e?.message || String(e);
-  } finally {
-    loading.value = false;
-  }
-}
-
-onMounted(() => {
-  pickVoice();
-  window.speechSynthesis?.addEventListener?.("voiceschanged", pickVoice);
-});
-</script>
-
-<style scoped>
-/* Layout */
-.page {
-  max-width: 980px;
-  margin: 50px auto;
-  padding: 0 18px;
+/* Page background (the important part) */
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #0d1117;
+  color: rgba(255,255,255,0.92);
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: #eee;
 }
 
-.title {
-  text-align: center;
-  font-size: 56px;
-  font-weight: 900;
-  margin: 0 0 26px;
-  letter-spacing: 0.6px;
+/* Vue root wrapper */
+.app {
+  min-height: 100vh;
+  background: #0d1117;
 }
 
-/* Avatars row */
-.avatars {
-  display: flex;
-  justify-content: center;
-  gap: 18px;
-  margin-bottom: 18px;
-  flex-wrap: wrap;
-}
+/* ===== NAVBAR ===== */
 
-/* Cards (obvious selected state) */
-.card {
-  position: relative;
-  background: #f2f2f2;
-  padding: 18px;
-  border-radius: 20px;
-  border: 3px solid transparent;
-  cursor: pointer;
-  width: 200px;
-  transition: transform 180ms ease, box-shadow 180ms ease, background 180ms ease,
-    border-color 180ms ease;
-}
-.card:hover {
-  transform: translateY(-3px);
-}
-
-.activeLeader {
-  border-color: #2f7cff;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(47, 124, 255, 0.22), 0 0 34px rgba(47, 124, 255, 0.45);
-}
-
-.activeDebatt {
-  border-color: #ff2e2e;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.18), 0 0 38px rgba(255, 0, 0, 0.58);
-}
-
-.role {
-  margin-top: 10px;
-  text-align: center;
-  font-weight: 900;
-  color: #111;
-  font-size: 14px;
-}
-
-.activeLabel {
-  margin-top: 8px;
-  text-align: center;
-  font-size: 12px;
-  font-weight: 900;
-  letter-spacing: 1px;
-}
-.leaderLabel { color: #2f7cff; }
-.debattLabel { color: #ff2e2e; }
-
-/* Faces */
-.face {
-  width: 128px;
-  height: 128px;
-  border-radius: 28px;
-  position: relative;
-  margin: 0 auto;
-  overflow: visible;
-  box-shadow: 0 12px 22px rgba(0, 0, 0, 0.18);
-}
-
-/* LEDER */
-.leader {
-  background: linear-gradient(135deg, #ffd7a8, #ffb07a);
-}
-
-.eyes {
-  position: absolute;
-  top: 50px;
-  width: 100%;
+.nav {
   display: flex;
   justify-content: center;
   gap: 28px;
-}
-.eye {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  background: #111;
+  padding: 22px 0;
 }
 
-.brows {
-  position: absolute;
-  top: 38px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  gap: 32px;
-}
-.brow {
-  width: 18px;
-  height: 6px;
-  border-radius: 6px;
-  background: rgba(0, 0, 0, 0.18);
-}
-
-.mouth {
-  position: absolute;
-  bottom: 26px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 34px;
-  height: 9px;
-  border-radius: 10px;
-  background: rgba(0, 0, 0, 0.35);
-}
-
-/* DEMON */
-.demon {
-  background: linear-gradient(145deg, #180000, #ff0000);
-  box-shadow: 0 0 26px rgba(255, 0, 0, 0.45);
-}
-.evilGlow {
-  position: absolute;
-  inset: -8px;
-  background: radial-gradient(circle at 50% 35%, rgba(255,0,0,.35), transparent 60%);
-  pointer-events: none;
-  border-radius: 28px;
-}
-
-.horn {
-  position: absolute;
-  top: -22px;
-  width: 0;
-  height: 0;
-  border-left: 16px solid transparent;
-  border-right: 16px solid transparent;
-  border-bottom: 34px solid #120000;
-  filter: drop-shadow(0 6px 0 rgba(0,0,0,.35));
-  z-index: 5;
-}
-.hornL { left: 14px; transform: rotate(-14deg); }
-.hornR { right: 14px; transform: rotate(14deg); }
-
-.demonEyes .eye {
-  background: #fff;
-  box-shadow: 0 0 14px rgba(255, 40, 40, 0.95), 0 0 26px rgba(255, 0, 0, 0.7);
-}
-
-.demonMouth {
-  width: 50px;
-  background: rgba(0, 0, 0, 0.35);
-}
-
-/* Talking animation */
-.face.talking { animation: bounce 140ms infinite alternate; }
-.face.talking .mouth { height: 18px; width: 46px; }
-
-@keyframes bounce {
-  from { transform: translateY(0); }
-  to   { transform: translateY(-3px); }
-}
-
-/* Input bar */
-.bar {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  margin-bottom: 18px;
-}
-
-input {
-  flex: 1;
-  padding: 12px 12px;
-  border-radius: 12px;
-  border: 1px solid #444;
-  background: #2f2f2f;
-  color: #fff;
-  outline: none;
-}
-
-button {
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: 1px solid #333;
-  background: #1f1f1f;
-  color: #fff;
-  cursor: pointer;
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-/* Answer box */
-.answer {
-  background: #f2f2f2;
-  border-radius: 20px;
-  padding: 18px;
-  color: #000;
-}
-
-.answerTitle {
-  text-align: center;
-  font-weight: 900;
-  color: #000;
-  margin-bottom: 10px;
+/* Links */
+.nav a {
+  position: relative;
+  color: #9aa4af;
+  font-weight: 700;
+  text-decoration: none;
   font-size: 18px;
+  transition: color .2s ease;
 }
 
-.answerBody {
-  background: #fff;
-  padding: 16px;
-  border-radius: 14px;
-  line-height: 1.6;
-  white-space: pre-wrap;
-  word-break: break-word;
-  color: #000;
+/* Hover glow */
+.nav a:hover {
+  color: #ffffff;
 }
 
-.muted {
-  text-align: center;
-  color: #333;
+/* Active route */
+.nav a.router-link-active {
+  color: #ffffff;
 }
 
-.error {
-  margin-top: 10px;
-  color: #b00020;
-  font-weight: 800;
+/* Underline animation */
+.nav a::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -6px;
+  width: 0%;
+  height: 2px;
+  background: #6ea2ff;
+  transition: width .25s ease;
 }
 
-/* Responsive */
-@media (max-width: 740px) {
-  .title { font-size: 42px; }
-  .card { width: 180px; }
-  .bar { flex-wrap: wrap; }
-  button { flex: 1; }
+.nav a:hover::after {
+  width: 100%;
+}
+
+.nav a.router-link-active::after {
+  width: 100%;
+}
+
+/* Smooth page spacing */
+#app {
+  min-height: 100vh;
 }
 </style>
