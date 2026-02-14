@@ -5,7 +5,6 @@ export interface ChatMessage {
 
 export interface ChatRequest {
   messages: ChatMessage[]
-  model: string
   persona: 'leader' | 'education' | 'tech'
 }
 
