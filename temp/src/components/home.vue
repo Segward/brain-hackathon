@@ -62,12 +62,9 @@
                 {{ msg.role === "user" ? "DU" : avatarLabelFor(msg.avatar) }}
               </span>
             </div>
-            <div class="bubble">{{ msg.text }}</div>
-          </div>
-
-          <div v-if="loading" class="msg assistant">
-            <div class="meta"><span class="badge assistant">{{ avatarLabel }}</span></div>
-            <div class="bubble typing">Skriver…</div>
+            <div class="bubble" :class="{ typing: msg.role === 'assistant' && msg.text === '' && loading }">
+              {{ msg.text || (msg.role === 'assistant' && loading ? 'Skriver…' : '') }}
+            </div>
           </div>
 
           <div v-if="error" class="msg assistant">

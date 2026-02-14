@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+  <!-- Background circle -->
+  <circle cx="50" cy="50" r="48" fill="#0d1117" stroke="#2f7cff" stroke-width="2"/>
+  
+  <!-- Building/Government icon -->
+  <g fill="#2f7cff">
+    <!-- Pillars -->
+    <rect x="25" y="45" width="8" height="30" rx="1"/>
+    <rect x="46" y="45" width="8" height="30" rx="1"/>
+    <rect x="67" y="45" width="8" height="30" rx="1"/>
+    
+    <!-- Roof -->
+    <path d="M20,45 L50,28 L80,45 Z" fill="#4a9eff"/>
+    
+    <!-- Base -->
+    <rect x="20" y="75" width="60" height="5" rx="1"/>
+    
+    <!-- AI spark/star -->
+    <circle cx="75" cy="30" r="3" fill="#00d4ff">
+      <animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <circle cx="68" cy="25" r="2" fill="#00d4ff">
+      <animate attributeName="opacity" values="0.3;1;0.3" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+</svg>
