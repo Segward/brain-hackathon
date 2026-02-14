@@ -20,7 +20,7 @@
         <div v-if="avatar === 0" class="activeLabel leaderLabel">AKTIV MODUS</div>
       </button>
 
-      <!-- DEBATT / DEMON -->
+      <!-- DEBATT -->
       <button
         class="card"
         type="button"
@@ -37,40 +37,6 @@
 
         <div class="role">Debatt</div>
         <div v-if="avatar === 1" class="activeLabel debattLabel">AKTIV MODUS</div>
-      </button>
-
-      <!-- GOJO-STYLE -->
-      <button
-        class="card"
-        type="button"
-        @click="avatar = 2"
-        :class="{ activeGojo: avatar === 2 }"
-      >
-        <div class="face gojo" :class="{ talking: speaking && avatar === 2 }">
-          <!-- spiky hair -->
-          <div class="hairBack"></div>
-          <div class="hairSpikes">
-            <span class="spike s1"></span><span class="spike s2"></span><span class="spike s3"></span>
-            <span class="spike s4"></span><span class="spike s5"></span><span class="spike s6"></span>
-            <span class="spike s7"></span><span class="spike s8"></span><span class="spike s9"></span>
-          </div>
-
-          <!-- blindfold -->
-          <div class="blindfold"></div>
-
-          <!-- subtle nose line -->
-          <div class="nose"></div>
-
-          <!-- mouth -->
-          <div class="mouth gojoMouth"></div>
-
-          <!-- purple collar -->
-          <div class="collar"></div>
-          <div class="collarShadow"></div>
-        </div>
-
-        <div class="role">Gojo</div>
-        <div v-if="avatar === 2" class="activeLabel gojoLabel">AKTIV MODUS</div>
       </button>
     </div>
 
@@ -130,18 +96,14 @@ function speak(text) {
   u.lang = "nb-NO";
   if (norwegianVoice) u.voice = norwegianVoice;
 
-  // Leder vs Debatt vs Gojo
+  // Leder vs Debatt
   if (avatar.value === 0) {
     u.pitch = 1.0;
     u.rate = 1.0;
-  } else if (avatar.value === 1) {
-    // mørkere stemme
-    u.pitch = 0.6;
-    u.rate = 0.9;
   } else {
-    // litt “skarpere/lysere” men fortsatt norsk
-    u.pitch = 1.15;
-    u.rate = 1.02;
+    // mørkere/roligere
+    u.pitch = 0.6;
+    u.rate = 0.92;
   }
 
   u.onstart = () => (speaking.value = true);
@@ -156,7 +118,7 @@ async function send() {
   response.value = "";
   loading.value = true;
 
-  const mode = avatar.value === 0 ? "leder" : avatar.value === 1 ? "debatt" : "gojo";
+  const mode = avatar.value === 0 ? "leder" : "debatt";
 
   try {
     const res = await fetch(
@@ -235,12 +197,6 @@ onMounted(() => {
   box-shadow: 0 0 0 4px rgba(255, 0, 0, 0.18), 0 0 38px rgba(255, 0, 0, 0.58);
 }
 
-.activeGojo {
-  border-color: #7b5cff;
-  background: #fff;
-  box-shadow: 0 0 0 4px rgba(123, 92, 255, 0.18), 0 0 38px rgba(123, 92, 255, 0.55);
-}
-
 .role {
   margin-top: 10px;
   text-align: center;
@@ -258,7 +214,6 @@ onMounted(() => {
 }
 .leaderLabel { color: #2f7cff; }
 .debattLabel { color: #ff2e2e; }
-.gojoLabel { color: #7b5cff; }
 
 /* Faces */
 .face {
@@ -267,7 +222,7 @@ onMounted(() => {
   border-radius: 28px;
   position: relative;
   margin: 0 auto;
-  overflow: visible; /* horn/hair can stick out */
+  overflow: visible;
   box-shadow: 0 12px 22px rgba(0, 0, 0, 0.18);
 }
 
@@ -354,121 +309,9 @@ onMounted(() => {
   background: rgba(0, 0, 0, 0.35);
 }
 
-/* GOJO-STYLE (inspirert: hvitt spiky hår + blindfold + lilla krage) */
-.gojo {
-  background: linear-gradient(135deg, #f6d7b6, #f0b48c);
-}
-
-/* hair base */
-.hairBack {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  top: -6px;
-  height: 44px;
-  border-radius: 22px 22px 14px 14px;
-  background: linear-gradient(#ffffff, #e7e7ef);
-  box-shadow: 0 10px 18px rgba(0,0,0,.08);
-  z-index: 3;
-}
-
-/* spikes */
-.hairSpikes {
-  position: absolute;
-  top: -28px;
-  left: 8px;
-  right: 8px;
-  height: 60px;
-  z-index: 4;
-  pointer-events: none;
-}
-.spike {
-  position: absolute;
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-bottom: 30px solid #ffffff;
-  filter: drop-shadow(0 4px 0 rgba(0,0,0,.12));
-}
-.s1{ left: 6px;  top: 22px; transform: rotate(-28deg) scale(0.95); }
-.s2{ left: 22px; top: 12px; transform: rotate(-18deg) scale(1.05); }
-.s3{ left: 40px; top: 6px;  transform: rotate(-8deg)  scale(1.18); }
-.s4{ left: 58px; top: 2px;  transform: rotate(2deg)   scale(1.22); }
-.s5{ left: 76px; top: 6px;  transform: rotate(12deg)  scale(1.18); }
-.s6{ left: 94px; top: 12px; transform: rotate(20deg)  scale(1.05); }
-.s7{ left: 110px; top: 22px; transform: rotate(30deg) scale(0.95); }
-.s8{ left: 34px; top: 20px; transform: rotate(-6deg)  scale(0.92); opacity:.9; }
-.s9{ left: 86px; top: 20px; transform: rotate(10deg)  scale(0.92); opacity:.9; }
-
-/* blindfold */
-.blindfold {
-  position: absolute;
-  top: 48px;
-  left: 14px;
-  right: 14px;
-  height: 28px;
-  border-radius: 16px;
-  background: linear-gradient(#0f0f12, #1a1a22);
-  box-shadow: 0 0 0 2px rgba(255,255,255,.06), 0 10px 18px rgba(0,0,0,.25);
-  z-index: 5;
-}
-.blindfold::after {
-  content: "";
-  position: absolute;
-  inset: 4px 8px;
-  border-radius: 14px;
-  background: linear-gradient(90deg, rgba(255,255,255,.06), rgba(255,255,255,0));
-  opacity: .8;
-}
-
-/* nose + mouth */
-.nose {
-  position: absolute;
-  top: 82px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 14px;
-  height: 10px;
-  border-left: 2px solid rgba(0,0,0,.18);
-  border-radius: 8px;
-  z-index: 2;
-}
-.gojoMouth {
-  width: 30px;
-  height: 7px;
-  background: rgba(0,0,0,.28);
-  bottom: 30px;
-  z-index: 2;
-}
-
-/* purple collar */
-.collar {
-  position: absolute;
-  left: -6px;
-  right: -6px;
-  bottom: -6px;
-  height: 52px;
-  border-radius: 18px;
-  background: linear-gradient(135deg, #1b102b, #2b1550);
-  z-index: 1;
-  box-shadow: 0 -6px 14px rgba(0,0,0,.22);
-}
-.collarShadow {
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 18px;
-  height: 20px;
-  border-radius: 14px;
-  background: rgba(255,255,255,.06);
-  z-index: 2;
-}
-
 /* Talking animation */
 .face.talking { animation: bounce 140ms infinite alternate; }
 .face.talking .mouth { height: 18px; width: 46px; }
-.gojo.talking .gojoMouth { width: 34px; height: 14px; border-radius: 12px; }
 
 @keyframes bounce {
   from { transform: translateY(0); }
