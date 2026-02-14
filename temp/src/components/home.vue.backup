@@ -311,6 +311,7 @@ const avatarLabelFor = (a) => (a === 0 ? "LEDER" : "DEBATT");
 
 /** ---------- Voice + Abort ---------- */
 let norwegianVoice = null;
+let aborter = null;
 
 function pickVoice() {
   const list = window.speechSynthesis?.getVoices?.() || [];
@@ -348,10 +349,6 @@ function speak(text) {
 function stopRequest() {
   try { aborter?.abort?.(); } catch {}
   aborter = null;
-  if (eventSource) {
-    eventSource.close();
-    eventSource = null;
-  }
 }
 
 function stopAll() {
